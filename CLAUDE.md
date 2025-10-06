@@ -37,62 +37,8 @@ Agents will perform a three-stage autonomous workflow:
 
 The key innovation is autonomous identification of data product boundaries from raw streams.
 
-## Presentation (Slides-as-Code)
+## Repository Structure
 
-This project uses a "slides-as-code" approach with Google Apps Script and clasp to programmatically generate the conference presentation.
-
-### Building Slides Locally
-
-```bash
-# Install clasp globally
-npm install -g @google/clasp
-
-# Log in to Google
-clasp login
-
-# Create new Apps Script project (first time only)
-cd slides-src
-clasp create --title "Data Mesh Presentation Builder" --type standalone
-
-# Push code to Apps Script
-clasp push
-
-# Build the presentation
-clasp run buildPresentation
-```
-
-### Viewing Logs
-```bash
-clasp logs
-```
-
-### Automated Builds
-
-GitHub Actions automatically builds the presentation on every push to `main`. The workflow:
-1. Pushes Apps Script code to Google
-2. Runs `buildPresentation` function
-3. Generates new presentation in Google Drive
-
-**Required Secrets** (for GitHub Actions):
-- `CLASPRC_JSON`: Contents of `~/.clasprc.json` (clasp credentials)
-- `CLASP_JSON`: Contents of `slides-src/.clasp.json` (Apps Script project ID)
-
-### Presentation Structure
-
-- **slides-src/Code.js**: Main entry point with helper functions
-- **slides-src/config.js**: Theme configuration and constants
-- **slides-src/content/**: Section-specific slide content
-  - `intro.js`: Introduction slides
-  - `problem.js`: Problem/chaos slides
-  - `solution.js`: Solution/agent team slides
-  - `demo.js`: Demo chapter slides
-  - `conclusion.js`: Conclusion slides
-- **docs/presentation-outline.md**: Full 45-minute presentation script with speaker notes
-
-### Template
-
-The presentation uses a colorful Google Slides template (ID: `10XqMMGWKuDichIWSMDeIw84KFgOSdZFS-5sv5avKYtk`) with:
-- Yellow, coral, blue, and green color scheme
-- Grid background texture
-- macOS-style window frames
-- Rounded callout shapes
+- `slides-src/` - Conference presentation infrastructure (see `slides-src/CLAUDE.md`)
+- `docs/` - Documentation and presentation outline
+- `.github/workflows/` - CI/CD automation
