@@ -49,7 +49,7 @@ jobs:
       # 7. Trigger presentation rebuild via webhook
       - name: Trigger presentation rebuild
         run: |
-          RESPONSE=$(curl -s -X POST "${{ secrets.SLIDES_WEBHOOK_URL }}" \
+          RESPONSE=$(curl -s -L -X POST "${{ secrets.SLIDES_WEBHOOK_URL }}" \
             -H "Content-Type: application/json" \
             -d '{"secret":"${{ secrets.SLIDES_WEBHOOK_SECRET }}"}')
 
