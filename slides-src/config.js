@@ -8,15 +8,15 @@ const CONFIG = {
 
   // Presentation metadata
   PRESENTATION_TITLE: 'From Chaos to Clarity: Building a Data Mesh with an AI Agent Team',
-  CONFERENCE: 'Current Data Streaming Conference 2025',
+  CONFERENCE: '[Your Conference Name]',
 
-  // Author information
+  // Author information (customize before presenting)
   AUTHOR: {
-    name: 'Blake Shaw',
-    title: 'Staff Software Engineer',
-    company: 'Rocket Mortgage',
-    email: 'blake@example.com',
-    blog: 'A Mindful Developer\'s Log'
+    name: '[Your Name]',
+    title: '[Your Title]',
+    company: '[Your Company]',
+    email: '[Your Email]',
+    blog: '[Your Blog/Website]'
   },
 
   // Theme colors (from the template)

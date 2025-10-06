@@ -3,7 +3,7 @@
 **Title**: From Chaos to Clarity: Building a Data Mesh with an AI Agent Team
 **Duration**: 45 minutes
 **Audience**: Data Engineers, Platform Engineers, Software Architects
-**Conference**: Current Data Streaming Conference 2025
+**Conference**: [Your Conference Name]
 
 ---
 
@@ -17,7 +17,7 @@ This presentation demonstrates how AI agents can automate the entire data produc
 
 ### Slide 1: Title Slide
 - **Title**: From Chaos to Clarity: Building a Data Mesh with an AI Agent Team
-- **Subtitle**: Current Data Streaming Conference 2025
+- **Subtitle**: [Your Conference Name]
 - **Speaker Notes**: Welcome. Today we're going to explore how AI agents can transform the way we build data platforms.
 
 ### Slide 2: The Journey Today (Agenda)
@@ -29,10 +29,10 @@ This presentation demonstrates how AI agents can automate the entire data produc
 **Speaker Notes**: We'll start by acknowledging the real problems teams face, then show how agent teams solve them with a live demonstration.
 
 ### Slide 3: Who Am I?
-- Blake Shaw
-- Staff Software Engineer at Rocket Mortgage
+- [Your Name]
+- [Your Title] at [Your Company]
 - Passionate about making complex data platforms simple
-- Blog: "A Mindful Developer's Log"
+- [Your Blog/Website]
 
 **Speaker Notes**: I've spent years watching smart teams struggle with data mesh adoption. This demo represents a potential path forward.
 
@@ -222,9 +222,9 @@ It's about rethinking how we build platforms:
 ### Slide 24: Thank You!
 **Questions?**
 
-Blake Shaw
-blake@example.com
-Blog: A Mindful Developer's Log
+[Your Name]
+[Your Email]
+[Your Blog/Website]
 
 **Speaker Notes**: Thank you. I'd love to hear your questions and discuss how this might work in your organization.
 
