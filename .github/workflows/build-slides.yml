@@ -46,15 +46,22 @@ jobs:
           cd slides-src
           clasp push --force
 
-      # 7. Run the buildPresentation function
-      - name: Build presentation
+      # 7. Trigger presentation rebuild via webhook
+      - name: Trigger presentation rebuild
         run: |
-          cd slides-src
-          clasp run buildPresentation
-        continue-on-error: true
+          RESPONSE=$(curl -s -X POST "${{ secrets.SLIDES_WEBHOOK_URL }}" \
+            -H "Content-Type: application/json" \
+            -d '{"secret":"${{ secrets.SLIDES_WEBHOOK_SECRET }}"}')
 
-      # 8. Output success message
-      - name: Output result
-        run: |
-          echo "✅ Slide build completed!"
-          echo "Check your Google Drive for the updated presentation"
+          echo "Webhook response: $RESPONSE"
+
+          # Check if successful
+          if echo "$RESPONSE" | grep -q '"success":true'; then
+            echo "✅ Presentation rebuilt successfully!"
+            PRES_URL=$(echo "$RESPONSE" | grep -o '"presentationUrl":"[^"]*"' | cut -d'"' -f4)
+            echo "View at: $PRES_URL"
+          else
+            echo "❌ Presentation build failed"
+            echo "$RESPONSE"
+            exit 1
+          fi
