@@ -36,14 +36,26 @@ clasp logs
 
 ## Automated Builds
 
-GitHub Actions automatically builds the presentation on every push to `main`. The workflow:
-1. Pushes Apps Script code to Google
-2. Runs `buildPresentation` function
-3. Generates new presentation in Google Drive
+GitHub Actions automatically builds the presentation on every push to `main` via a webhook endpoint.
 
-**Required GitHub Secrets**:
+### How it works:
+1. GitHub Actions pushes code to Apps Script with `clasp push`
+2. GitHub Actions POSTs to the deployed web app endpoint
+3. Web app validates secret token and triggers `buildPresentation()`
+4. New presentation is generated in Google Drive
+
+### Setup Requirements:
+
+**Apps Script Deployment**:
+1. Deploy the script as a Web App (Deploy → New deployment → Web app)
+2. Set "Execute as: Me" and "Who has access: Anyone"
+3. Add `WEBHOOK_SECRET` to Script Properties with a random token
+
+**GitHub Secrets**:
 - `CLASPRC_JSON`: Contents of `~/.clasprc.json` (clasp credentials)
 - `CLASP_JSON`: Contents of `slides-src/.clasp.json` (Apps Script project ID)
+- `SLIDES_WEBHOOK_URL`: The deployed web app URL
+- `SLIDES_WEBHOOK_SECRET`: Same value as the Script Property
 
 ## Code Structure
 

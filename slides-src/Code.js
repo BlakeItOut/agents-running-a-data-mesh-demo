@@ -7,6 +7,65 @@
  */
 
 /**
+ * Webhook endpoint for GitHub Actions to trigger presentation rebuild
+ *
+ * Deploy this script as a web app:
+ * 1. Click Deploy > New deployment
+ * 2. Type: Web app
+ * 3. Execute as: Me
+ * 4. Who has access: Anyone
+ * 5. Copy the web app URL
+ *
+ * Add to GitHub Secrets:
+ * - SLIDES_WEBHOOK_URL: The web app URL
+ * - SLIDES_WEBHOOK_SECRET: A random secret token (e.g., openssl rand -hex 32)
+ */
+function doPost(e) {
+  try {
+    // Parse request
+    const params = JSON.parse(e.postData.contents);
+    const providedSecret = params.secret;
+
+    // Validate secret token
+    // Note: Store the expected secret in Script Properties:
+    // File > Project properties > Script properties > Add row
+    // Property: WEBHOOK_SECRET, Value: your-secret-token
+    const expectedSecret = PropertiesService.getScriptProperties().getProperty('WEBHOOK_SECRET');
+
+    if (!expectedSecret) {
+      return ContentService.createTextOutput(JSON.stringify({
+        success: false,
+        error: 'Webhook not configured. Set WEBHOOK_SECRET in Script Properties.'
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    if (providedSecret !== expectedSecret) {
+      return ContentService.createTextOutput(JSON.stringify({
+        success: false,
+        error: 'Invalid secret token'
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // Build presentation
+    Logger.log('Webhook triggered - building presentation...');
+    const url = buildPresentation();
+
+    return ContentService.createTextOutput(JSON.stringify({
+      success: true,
+      presentationUrl: url,
+      message: 'Presentation built successfully'
+    })).setMimeType(ContentService.MimeType.JSON);
+
+  } catch (error) {
+    Logger.log('Webhook error: ' + error);
+    return ContentService.createTextOutput(JSON.stringify({
+      success: false,
+      error: error.toString()
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+/**
  * Main function: Builds the complete presentation
  */
 function buildPresentation() {
