@@ -1,0 +1,25 @@
+# Clasp
+.clasp.json
+.clasprc.json
+
+# Node
+node_modules/
+npm-debug.log
+package-lock.json
+
+# Apps Script
+slides-src/.claspignore
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Temporary files
+*.tmp
+.~*
