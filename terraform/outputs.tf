@@ -32,12 +32,12 @@ output "kafka_rest_endpoint" {
 
 output "schema_registry_id" {
   description = "The ID of the Schema Registry cluster"
-  value       = confluent_schema_registry_cluster.schema_registry.id
+  value       = data.confluent_schema_registry_cluster.schema_registry.id
 }
 
 output "schema_registry_rest_endpoint" {
   description = "The REST endpoint for Schema Registry"
-  value       = confluent_schema_registry_cluster.schema_registry.rest_endpoint
+  value       = data.confluent_schema_registry_cluster.schema_registry.rest_endpoint
 }
 
 output "schema_registry_api_key" {
@@ -97,7 +97,7 @@ output "quick_start_info" {
   description = "Quick start information for connecting to the cluster"
   value = {
     bootstrap_servers = confluent_kafka_cluster.datagen_cluster.bootstrap_endpoint
-    schema_registry   = confluent_schema_registry_cluster.schema_registry.rest_endpoint
+    schema_registry   = data.confluent_schema_registry_cluster.schema_registry.rest_endpoint
     environment_id    = confluent_environment.data_mesh_env.id
     cluster_id        = confluent_kafka_cluster.datagen_cluster.id
     total_topics      = length(confluent_kafka_topic.datagen_topics)

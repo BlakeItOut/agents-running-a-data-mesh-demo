@@ -18,7 +18,6 @@ override.tf.json
 
 # Terraform plugins
 .terraform/
-.terraform.lock.hcl
 
 # CLI configuration files
 .terraformrc
