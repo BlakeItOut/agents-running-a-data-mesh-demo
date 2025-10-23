@@ -1,0 +1,18 @@
+# Environment files with secrets
+.env
+
+# Mac files
+.DS_Store
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Terraform (redundant with terraform/.gitignore but safe to have here too)
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
