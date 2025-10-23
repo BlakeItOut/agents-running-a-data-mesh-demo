@@ -53,22 +53,13 @@ This will create a `.clasp.json` file with your script ID.
 clasp push
 ```
 
-### 6. Deploy as Web App (for GitHub Actions automation)
+### 6. Run the presentation builder
 
-1. Go to https://script.google.com and open your project
-2. Click **Deploy** → **New deployment**
-3. Select type: **Web app**
-4. Configure:
-   - Execute as: **Me**
-   - Who has access: **Anyone**
-5. Click **Deploy**
-6. Copy the **Web app URL**
-7. In the Apps Script editor: **File** → **Project properties** → **Script properties**
-8. Add property: `WEBHOOK_SECRET` with a random token value (generate with `openssl rand -hex 32`)
+```bash
+clasp run buildPresentation
+```
 
-### 7. Run the presentation builder
-
-From the Apps Script web editor:
+Or run it from the Apps Script web editor:
 1. Go to https://script.google.com
 2. Open your project
 3. Select `buildPresentation` from the function dropdown
@@ -76,34 +67,28 @@ From the Apps Script web editor:
 
 ## GitHub Actions Setup
 
-To automate slide generation on every push to `main`:
+To automate slide generation on every push:
 
-### 1. Set up the Web App (see step 6 above)
-
-Make sure you've deployed the Apps Script as a web app and configured the `WEBHOOK_SECRET` in Script Properties.
-
-### 2. Get your clasp credentials
+### 1. Get your clasp credentials
 
 After running `clasp login`, find the `.clasprc.json` file:
 - **Windows**: `C:\Users\YourUser\.clasprc.json`
 - **Mac/Linux**: `~/.clasprc.json`
 
-### 3. Create GitHub Secrets
+### 2. Create GitHub Secrets
 
 In your GitHub repository:
 1. Go to **Settings → Secrets and variables → Actions**
-2. Create these secrets:
+2. Create two secrets:
    - `CLASPRC_JSON`: Paste the entire contents of `.clasprc.json`
-   - `CLASP_JSON`: Paste the contents of `slides-src/.clasp.json`
-   - `SLIDES_WEBHOOK_URL`: The web app URL from deployment (step 6.6)
-   - `SLIDES_WEBHOOK_SECRET`: The same secret token from Script Properties (step 6.8)
+   - `CLASP_JSON`: Paste the contents of `.clasp.json` from the `slides-src` directory
 
-### 4. Push to main
+### 3. Push to main
 
 The workflow in `.github/workflows/build-slides.yml` will automatically:
-1. Push your Apps Script code to Google
-2. Call the web app endpoint to trigger `buildPresentation`
-3. Generate a new presentation in your Google Drive
+- Push your Apps Script code
+- Run the `buildPresentation` function
+- Generate a new presentation in your Google Drive
 
 ## Local Development
 
