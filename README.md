@@ -1,60 +1,44 @@
-# Agentic Data Mesh Demo
+# Agentic Data Mesh Demo: Initial Specification
 
-**From Chaos to Clarity: Building a Data Mesh with an AI Agent Team**
+## High-Level Goal
 
-A demonstration showcasing autonomous agents that transform raw, stream-based data into a product-oriented, discoverable data mesh.
+This document outlines the initial specification for a demo showcasing autonomous agents that can transform a raw, stream-based data environment into a product-oriented, discoverable data mesh. The primary goal of this initial phase is to align on the plan and gather feedback before implementation begins.
 
-## Overview
+## Phase 1: Foundational Setup & Specification (This PR)
 
-This project demonstrates how AI agents can automate the entire data product lifecycle—from design to operation—making the Data Mesh approach finally practical and scalable. A team of specialized agents work together to build production-ready data products in minutes instead of months.
+### Objective
 
-### The Agent Team
+The objective of this first pull request is to submit this high-level plan and specification for community/stakeholder feedback.
 
-- 🏗️ **The Architect**: Design and schema expert
-- ⚙️ **The Engineer**: Infrastructure and bootstrapping specialist
-- 💻 **The Coder**: Pair-programmer for business logic and testing
-- 📚 **The Scribe**: Documentation and cataloging assistant
-- 🔍 **The SRE**: Site Reliability Expert for observability
+### The Contextual Environment
 
-## Current Status
+The foundation of the demo is a "contextual environment" representing a typical state of raw, siloed data streams within an organization.
 
-**Phase 1: Foundational Setup & Specification** ✅
+*   **Platform:** Confluent Cloud
+*   **Data Source:** Standard Confluent sample data topics.
+*   **Initial Topics:**
+    *   `users`
+    *   `orders`
+    *   `products`
 
-- [x] Initial specification and architecture defined
-- [x] Conference presentation infrastructure
-- [ ] Agent implementation (planned)
-- [ ] Terraform generation (planned)
-- [ ] Live demo environment (planned)
+These topics will serve as the initial, unstructured data sources that the agents will work with.
 
-## Data Environment
+### The Agentic Workflow (High-Level)
 
-- **Platform**: Confluent Cloud
-- **Sample Topics**: `users`, `orders`, `products`
-- **Metadata Sources**: Schema Registry, usage metrics
+The core of the demo is to observe agents performing the following workflow autonomously:
 
-## The Demo
+1.  **Discovery & Ingestion:** Agents will be configured to connect to the specified Confluent topics and begin ingesting the data streams.
 
-The 45-minute presentation demonstrates each agent working through the complete data product lifecycle:
+2.  **Analysis & Enrichment:** Agents will analyze the raw data to understand its structure, content, and relationships. To enrich this analysis, they will leverage external tools and metadata sources, such as:
+    *   **Schema Registry:** To understand the formal structure of the data.
+    *   **Usage Metrics:** To identify which data is frequently used or critical.
 
-1. **Chapter 1 - The Blueprint**: The Architect designs the schema and data contract
-2. **Chapter 2 - The Foundation**: The Engineer scaffolds infrastructure and opens a PR
-3. **Chapter 3 - The Logic**: The Coder implements business logic and tests
-4. **Chapter 4 - The Manual**: The Scribe documents and registers the data product
-5. **Chapter 5 - The Watchtower**: The SRE creates observability infrastructure
+3.  **Data Product Definition:** Based on their analysis, the agents will autonomously define and register new data products. This process involves:
+    *   Identifying bounded contexts and potential data product boundaries (e.g., a "User Profile" data product from the `users` topic).
+    *   Generating the necessary configurations (e.g., Terraform files, data catalog entries) to formally define the data product, its schema, ownership, and access policies.
 
-Starting from a single prompt, the agents build a production-ready `user-authentication-events` data product with schema, Terraform configs, application code, tests, documentation, and monitoring—all reviewable via Pull Request.
+## Future Phases (High-Level)
 
-## Key Principles
-
-- **Specialization over Generalization**: A team of focused agents beats one generalist
-- **Humans in the Loop**: Augmentation, not replacement—developers review and approve
-- **Contribution First**: Agents generate PRs, not direct deployments
-- **Built-in Governance**: Standards enforced by default, not bolted on afterward
-
-## Contributing
-
-This is a demonstration project. Feedback and suggestions welcome via issues.
-
-## License
-
-MIT
+*   Implementation of the agents themselves.
+*   Development of the Terraform configurations that the agents will generate and manage.
+*   Creation of the final presentation and a self-guided version of the demo.
