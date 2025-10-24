@@ -1,0 +1,13 @@
+{
+    "mcpServers": {
+        "confluent": {
+            "command": "npx",
+            "args": [
+                "-y",
+                "@confluentinc/mcp-confluent",
+                "-e",
+                "../.env"
+            ]
+        }
+    }
+}
