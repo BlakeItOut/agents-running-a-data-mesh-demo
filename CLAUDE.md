@@ -155,9 +155,17 @@ The 37 templates span diverse domains to create realistic complexity:
 
 ## Current State
 
-This repository is in **Phase 1** (Foundational Setup). The Terraform infrastructure is complete and functional. Future phases will implement:
+This repository is in **Phase 1** (Foundational Setup). The Terraform infrastructure is complete and functional.
 
-1. Autonomous agents for data discovery and ingestion
+**Next: Agent Integration** - See `AGENTS.md` for detailed documentation on integrating Amazon Bedrock AgentCore with MCP (Model Context Protocol) to automate the data mesh transformation.
+
+Future phases will implement:
+
+1. **Autonomous Agents** (via Amazon Bedrock AgentCore MCP)
+   - Discovery Agent: Enumerate and inventory all data streams
+   - Analysis Agent: Understand relationships and patterns
+   - Product Definition Agent: Define data products from analyzed streams
+   - Catalog Agent: Register products in discoverable catalog
 2. Analysis and enrichment using Schema Registry and usage metrics
 3. Data product definition and registration
 4. Presentation materials and self-guided demo
