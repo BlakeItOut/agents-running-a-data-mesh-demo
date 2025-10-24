@@ -30,7 +30,7 @@ locals {
     pizza_orders_cancelled        = "PIZZA_ORDERS_CANCELLED"
     pizza_orders_completed        = "PIZZA_ORDERS_COMPLETED"
     product                       = "PRODUCT"
-    purchase                      = "PURCHASE"
+    purchases                     = "PURCHASES"
     ratings                       = "RATINGS"
     shoe_clickstream              = "SHOE_CLICKSTREAM"
     shoe_customers                = "SHOE_CUSTOMERS"
@@ -41,7 +41,6 @@ locals {
     stores                        = "STORES"
     syslog_logs                   = "SYSLOG_LOGS"
     transactions                  = "TRANSACTIONS"
-    users_array_map               = "USERS_ARRAY_MAP"
     users                         = "USERS"
   }
 }
