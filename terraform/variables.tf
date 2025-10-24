@@ -83,7 +83,7 @@ variable "connector_quickstart_templates" {
     "pizza_orders_cancelled",
     "pizza_orders_completed",
     "product",
-    "purchase",
+    "purchases",
     "ratings",
     "shoe_clickstream",
     "shoe_customers",
@@ -94,7 +94,6 @@ variable "connector_quickstart_templates" {
     "stores",
     "syslog_logs",
     "transactions",
-    "users_array_map",
     "users"
   ]
 }

@@ -1,15 +1,16 @@
 # Schema Registry Configuration
 # Schema Registry is automatically enabled with Stream Governance in the environment
-# We reference it as a data source after the environment is created
+# We reference it as a data source after the Kafka cluster is created
 
 # Data source to get the Schema Registry cluster for this environment
+# Schema Registry is provisioned automatically after the first Kafka cluster
 data "confluent_schema_registry_cluster" "schema_registry" {
   environment {
     id = confluent_environment.data_mesh_env.id
   }
 
   depends_on = [
-    confluent_environment.data_mesh_env
+    confluent_kafka_cluster.datagen_cluster
   ]
 }
 

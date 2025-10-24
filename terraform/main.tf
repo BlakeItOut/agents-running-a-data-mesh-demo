@@ -14,9 +14,13 @@ provider "confluent" {
   cloud_api_secret = var.confluent_cloud_api_secret != "" ? var.confluent_cloud_api_secret : null
 }
 
-# Create Confluent Cloud Environment
+# Create Confluent Cloud Environment with Stream Governance
 resource "confluent_environment" "data_mesh_env" {
   display_name = var.environment_name
+
+  stream_governance {
+    package = "ESSENTIALS"
+  }
 
   lifecycle {
     prevent_destroy = false
