@@ -15,13 +15,13 @@ variable "confluent_cloud_api_secret" {
 variable "environment_name" {
   description = "Name of the Confluent Cloud environment"
   type        = string
-  default     = "data-mesh-demo"
+  default     = "agentic-data-mesh"
 }
 
 variable "cluster_name" {
   description = "Name of the Kafka cluster"
   type        = string
-  default     = "datagen-cluster"
+  default     = "data-mesh-cluster"
 }
 
 variable "cloud_provider" {

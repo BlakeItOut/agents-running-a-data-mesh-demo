@@ -6,7 +6,7 @@ This Terraform configuration spins up a complete Confluent Cloud environment wit
 
 This setup creates:
 
-- **1 Confluent Cloud Environment** (`data-mesh-demo`)
+- **1 Confluent Cloud Environment** (`agentic-data-mesh`)
 - **1 Standard Kafka Cluster** (multi-zone, RBAC-enabled)
 - **37 Kafka Topics** (one per datagen template)
 - **Schema Registry** with Avro schemas for all topics
@@ -68,7 +68,7 @@ If this is your first time setting up Confluent Cloud API keys:
 3. **Create a new Cloud API key:**
    - Click "Add key" or "Create key"
    - Choose **"My account"** (not "Service account") for simplest setup
-   - Give it a description like "terraform-data-mesh-demo"
+   - Give it a description like "terraform-agentic-data-mesh"
    - **Important:** Copy both the key and secret immediately - you won't see the secret again!
 4. **Set environment variables:**
 
@@ -191,7 +191,7 @@ While terraform is running, you can monitor progress:
 
 **Check Confluent Cloud Console:**
 - Navigate to https://confluent.cloud
-- Go to your environment (will appear as "data-mesh-demo")
+- Go to your environment (will appear as "agentic-data-mesh")
 - Watch resources appear in real-time as they're created
 
 **Monitor Terraform Progress (if using logs):**
@@ -239,8 +239,8 @@ connector_kafka_max_interval = 500  # Generate messages faster
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `environment_name` | Confluent environment name | `data-mesh-demo` |
-| `cluster_name` | Kafka cluster name | `datagen-cluster` |
+| `environment_name` | Confluent environment name | `agentic-data-mesh` |
+| `cluster_name` | Kafka cluster name | `data-mesh-cluster` |
 | `cloud_provider` | Cloud provider (AWS, GCP, AZURE) | `AWS` |
 | `region` | Cloud region | `us-east-1` |
 | `cluster_availability` | SINGLE_ZONE or MULTI_ZONE | `MULTI_ZONE` |
