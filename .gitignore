@@ -15,3 +15,7 @@
 *.tfstate
 *.tfstate.*
 .terraform/
+
+# Agent outputs
+agents/discovery/discovery-outputs/
+agents/discovery/venv/
