@@ -3,10 +3,16 @@
 import json
 import os
 from typing import Dict, Any, Optional, Callable
-from confluent_kafka import Producer, Consumer, KafkaError
-from confluent_kafka.serialization import StringSerializer, SerializationContext, MessageField
-from confluent_kafka.schema_registry import SchemaRegistryClient
-from confluent_kafka.schema_registry.avro import AvroSerializer, AvroDeserializer
+
+# Kafka dependencies are optional for dry-run mode
+try:
+    from confluent_kafka import Producer, Consumer, KafkaError
+    from confluent_kafka.serialization import StringSerializer, SerializationContext, MessageField
+    from confluent_kafka.schema_registry import SchemaRegistryClient
+    from confluent_kafka.schema_registry.avro import AvroSerializer, AvroDeserializer
+    KAFKA_AVAILABLE = True
+except ImportError:
+    KAFKA_AVAILABLE = False
 
 
 def get_kafka_config() -> Dict[str, str]:

@@ -8,6 +8,8 @@ In production, this would query Confluent Cloud Metrics API for real metrics.
 For now, generates realistic synthetic metrics based on 37 datagen connectors.
 """
 
+import argparse
+import json
 import sys
 from datetime import datetime, UTC
 from pathlib import Path
@@ -42,10 +44,10 @@ def generate_synthetic_metrics_state():
     return metrics_state
 
 
-def run_metrics_agent():
+def run_metrics_agent(dry_run=False):
     """Main metrics agent logic"""
     print("=" * 60)
-    print("METRICS AGENT (Synthetic Data)")
+    print("METRICS AGENT (Synthetic Data)" + (" (DRY RUN)" if dry_run else ""))
     print("=" * 60)
 
     print("\n1. Generating synthetic metrics state...")
@@ -56,25 +58,37 @@ def run_metrics_agent():
     print(f"   Error Rate: {metrics_state['error_rate'] * 100}%")
     print(f"   Storage Used: {metrics_state['storage_used_gb']} GB")
 
-    # Publish to Kafka
-    print("\n2. Publishing to agent-state-metrics topic...")
-    try:
-        schema_str = get_schema_string("metrics-state")
-        producer, serializer = create_avro_producer(schema_str)
+    # Publish to Kafka or save to file
+    print("\n2. Publishing metrics state...")
+    if dry_run:
+        # Dry run: save to file
+        output_dir = Path(__file__).parent.parent / "dry-run-output"
+        output_dir.mkdir(exist_ok=True)
+        output_file = output_dir / "metrics-state.json"
 
-        produce_message(
-            producer=producer,
-            serializer=serializer,
-            topic="agent-state-metrics",
-            key="data-mesh-cluster",
-            value=metrics_state
-        )
+        with open(output_file, 'w') as f:
+            json.dump(metrics_state, f, indent=2)
 
-        print("   ✅ Metrics state published successfully!")
+        print(f"   💾 Dry run: Saved to {output_file}")
+    else:
+        # Normal mode: publish to Kafka
+        try:
+            schema_str = get_schema_string("metrics-state")
+            producer, serializer = create_avro_producer(schema_str)
 
-    except Exception as e:
-        print(f"   ❌ Failed to publish: {e}")
-        raise
+            produce_message(
+                producer=producer,
+                serializer=serializer,
+                topic="agent-state-metrics",
+                key="data-mesh-cluster",
+                value=metrics_state
+            )
+
+            print("   ✅ Metrics state published to Kafka successfully!")
+
+        except Exception as e:
+            print(f"   ❌ Failed to publish: {e}")
+            raise
 
     print("\n" + "=" * 60)
     print("METRICS AGENT COMPLETE")
@@ -84,5 +98,10 @@ def run_metrics_agent():
 
 
 if __name__ == "__main__":
-    result = run_metrics_agent()
+    parser = argparse.ArgumentParser(description="Metrics Agent - Generates synthetic system metrics")
+    parser.add_argument("--dry-run", action="store_true",
+                       help="Dry run mode: save output to file instead of publishing to Kafka")
+    args = parser.parse_args()
+
+    result = run_metrics_agent(dry_run=args.dry_run)
     print(f"\nSynthetic Metrics: {result['total_throughput_mbps']} MB/s throughput, {result['avg_latency_ms']} ms latency")

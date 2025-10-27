@@ -8,6 +8,8 @@ In production, this would track actual consumer groups and consumption patterns.
 For now, generates realistic synthetic data since there are no active consumers yet.
 """
 
+import argparse
+import json
 import sys
 from datetime import datetime, UTC
 from pathlib import Path
@@ -48,10 +50,10 @@ def generate_synthetic_usage_state():
     return usage_state
 
 
-def run_usage_agent():
+def run_usage_agent(dry_run=False):
     """Main usage agent logic"""
     print("=" * 60)
-    print("USAGE AGENT (Synthetic Data)")
+    print("USAGE AGENT (Synthetic Data)" + (" (DRY RUN)" if dry_run else ""))
     print("=" * 60)
 
     print("\n1. Generating synthetic usage state...")
@@ -61,25 +63,37 @@ def run_usage_agent():
     print(f"   Active Consumers: {usage_state['active_consumers']}")
     print(f"   Idle Topics: {len(usage_state['idle_topics'])}")
 
-    # Publish to Kafka
-    print("\n2. Publishing to agent-state-usage topic...")
-    try:
-        schema_str = get_schema_string("usage-state")
-        producer, serializer = create_avro_producer(schema_str)
+    # Publish to Kafka or save to file
+    print("\n2. Publishing usage state...")
+    if dry_run:
+        # Dry run: save to file
+        output_dir = Path(__file__).parent.parent / "dry-run-output"
+        output_dir.mkdir(exist_ok=True)
+        output_file = output_dir / "usage-state.json"
 
-        produce_message(
-            producer=producer,
-            serializer=serializer,
-            topic="agent-state-usage",
-            key="data-mesh-cluster",
-            value=usage_state
-        )
+        with open(output_file, 'w') as f:
+            json.dump(usage_state, f, indent=2)
 
-        print("   ✅ Usage state published successfully!")
+        print(f"   💾 Dry run: Saved to {output_file}")
+    else:
+        # Normal mode: publish to Kafka
+        try:
+            schema_str = get_schema_string("usage-state")
+            producer, serializer = create_avro_producer(schema_str)
 
-    except Exception as e:
-        print(f"   ❌ Failed to publish: {e}")
-        raise
+            produce_message(
+                producer=producer,
+                serializer=serializer,
+                topic="agent-state-usage",
+                key="data-mesh-cluster",
+                value=usage_state
+            )
+
+            print("   ✅ Usage state published to Kafka successfully!")
+
+        except Exception as e:
+            print(f"   ❌ Failed to publish: {e}")
+            raise
 
     print("\n" + "=" * 60)
     print("USAGE AGENT COMPLETE")
@@ -89,5 +103,10 @@ def run_usage_agent():
 
 
 if __name__ == "__main__":
-    result = run_usage_agent()
+    parser = argparse.ArgumentParser(description="Usage Agent - Generates synthetic usage metrics")
+    parser.add_argument("--dry-run", action="store_true",
+                       help="Dry run mode: save output to file instead of publishing to Kafka")
+    args = parser.parse_args()
+
+    result = run_usage_agent(dry_run=args.dry_run)
     print(f"\nSynthetic Usage State: {result['consumer_groups']} groups, {result['active_consumers']} consumers")

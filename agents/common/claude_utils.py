@@ -1,11 +1,39 @@
-"""Utilities for interacting with Claude API via Anthropic SDK."""
+"""Utilities for interacting with Claude API via Anthropic SDK or AWS Bedrock."""
 
+import json
 import os
 from typing import Optional, List, Dict, Any
-from anthropic import Anthropic
+
+# Anthropic SDK is optional - will check at runtime
+try:
+    from anthropic import Anthropic
+    ANTHROPIC_AVAILABLE = True
+except ImportError:
+    ANTHROPIC_AVAILABLE = False
+
+# AWS Bedrock (boto3) is optional
+try:
+    import boto3
+    BEDROCK_AVAILABLE = True
+except ImportError:
+    BEDROCK_AVAILABLE = False
 
 
-def get_claude_client() -> Anthropic:
+def get_backend():
+    """
+    Determine which Claude backend to use.
+
+    Returns:
+        'bedrock' or 'anthropic'
+    """
+    backend = os.getenv('CLAUDE_BACKEND', 'anthropic').lower()
+    if backend not in ['bedrock', 'anthropic']:
+        print(f"Warning: Unknown CLAUDE_BACKEND '{backend}', defaulting to 'anthropic'")
+        return 'anthropic'
+    return backend
+
+
+def get_claude_client():
     """
     Get an Anthropic client instance.
 
@@ -14,12 +42,41 @@ def get_claude_client() -> Anthropic:
 
     Raises:
         ValueError: If ANTHROPIC_API_KEY environment variable is not set
+        ImportError: If anthropic package is not installed
     """
+    if not ANTHROPIC_AVAILABLE:
+        raise ImportError("anthropic package not installed. Install with: pip install anthropic")
+
     api_key = os.getenv('ANTHROPIC_API_KEY')
     if not api_key:
         raise ValueError("ANTHROPIC_API_KEY environment variable must be set")
 
     return Anthropic(api_key=api_key)
+
+
+def get_bedrock_client():
+    """
+    Get an AWS Bedrock Runtime client instance.
+
+    Returns:
+        Configured boto3 bedrock-runtime client
+
+    Raises:
+        ImportError: If boto3 package is not installed
+        ValueError: If AWS credentials are not configured
+    """
+    if not BEDROCK_AVAILABLE:
+        raise ImportError("boto3 package not installed. Install with: pip install boto3")
+
+    region = os.getenv('AWS_REGION', 'us-east-1')
+
+    # boto3 will automatically use AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY from env
+    # or from ~/.aws/credentials
+    try:
+        client = boto3.client('bedrock-runtime', region_name=region)
+        return client
+    except Exception as e:
+        raise ValueError(f"Failed to create Bedrock client. Ensure AWS credentials are set: {e}")
 
 
 def call_claude(
@@ -30,7 +87,7 @@ def call_claude(
     temperature: float = 1.0
 ) -> str:
     """
-    Call Claude API with a prompt.
+    Call Claude API with a prompt using either Anthropic API or AWS Bedrock.
 
     Args:
         prompt: The user prompt
@@ -42,6 +99,22 @@ def call_claude(
     Returns:
         Claude's response as a string
     """
+    backend = get_backend()
+
+    if backend == 'bedrock':
+        return _call_claude_bedrock(prompt, system_prompt, model, max_tokens, temperature)
+    else:
+        return _call_claude_anthropic(prompt, system_prompt, model, max_tokens, temperature)
+
+
+def _call_claude_anthropic(
+    prompt: str,
+    system_prompt: Optional[str],
+    model: str,
+    max_tokens: int,
+    temperature: float
+) -> str:
+    """Call Claude via Anthropic API."""
     client = get_claude_client()
 
     message_params = {
@@ -66,6 +139,69 @@ def call_claude(
         return response.content[0].text
 
     return ""
+
+
+def _call_claude_bedrock(
+    prompt: str,
+    system_prompt: Optional[str],
+    model: str,
+    max_tokens: int,
+    temperature: float
+) -> str:
+    """Call Claude via AWS Bedrock Runtime."""
+    client = get_bedrock_client()
+
+    # Map model names to Bedrock model IDs
+    model_id_map = {
+        "claude-3-5-sonnet-20241022": "anthropic.claude-3-5-sonnet-20241022-v2:0",
+        "claude-3-5-sonnet-20240620": "anthropic.claude-3-5-sonnet-20240620-v1:0",
+        "claude-3-sonnet-20240229": "anthropic.claude-3-sonnet-20240229-v1:0",
+        "claude-3-opus-20240229": "anthropic.claude-3-opus-20240229-v1:0",
+        "claude-3-haiku-20240307": "anthropic.claude-3-haiku-20240307-v1:0",
+    }
+
+    # Use mapped model ID or pass through if already a Bedrock ID
+    if model in model_id_map:
+        bedrock_model_id = model_id_map[model]
+    elif model.startswith("anthropic."):
+        bedrock_model_id = model
+    else:
+        # Default to latest Sonnet if unknown
+        bedrock_model_id = "anthropic.claude-3-5-sonnet-20241022-v2:0"
+
+    # Construct request body in Anthropic Messages API format
+    request_body = {
+        "anthropic_version": "bedrock-2023-05-31",
+        "max_tokens": max_tokens,
+        "temperature": temperature,
+        "messages": [
+            {
+                "role": "user",
+                "content": prompt
+            }
+        ]
+    }
+
+    if system_prompt:
+        request_body["system"] = system_prompt
+
+    # Invoke model
+    try:
+        response = client.invoke_model(
+            modelId=bedrock_model_id,
+            body=json.dumps(request_body)
+        )
+
+        # Parse response
+        response_body = json.loads(response['body'].read())
+
+        # Extract text from response
+        if 'content' in response_body and len(response_body['content']) > 0:
+            return response_body['content'][0]['text']
+
+        return ""
+    except Exception as e:
+        raise RuntimeError(f"Failed to invoke Bedrock model: {e}")
 
 
 def synthesize_state(

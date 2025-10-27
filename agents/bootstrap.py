@@ -5,14 +5,17 @@ Bootstrap Script for Agent Orchestration
 Runs all monitoring agents and the current state prompt agent in sequence.
 
 Flow:
-1. Deployment Agent → agent-state-deployment
-2. Usage Agent → agent-state-usage
-3. Metrics Agent → agent-state-metrics
-4. Current State Prompt → agent-state-current (synthesizes 1-3 with Claude)
+1. Deployment Agent → agent-state-deployment (or dry-run-output/deployment-state.json)
+2. Usage Agent → agent-state-usage (or dry-run-output/usage-state.json)
+3. Metrics Agent → agent-state-metrics (or dry-run-output/metrics-state.json)
+4. Current State Prompt → agent-state-current (or dry-run-output/current-state.json)
 
 This establishes the initial "Current State" for the Learning Prompt agent.
+
+Supports --dry-run mode for testing without Kafka infrastructure.
 """
 
+import argparse
 import sys
 import asyncio
 import time
@@ -28,12 +31,17 @@ from monitoring.metrics import run_metrics_agent
 from ideation.current_state_prompt import run_current_state_prompt
 
 
-def print_header():
+def print_header(dry_run=False):
     """Print bootstrap header"""
     print("\n" + "=" * 70)
-    print(" " * 15 + "AGENT ORCHESTRATION BOOTSTRAP")
+    mode = " (DRY RUN MODE)" if dry_run else ""
+    print(" " * 10 + f"AGENT ORCHESTRATION BOOTSTRAP{mode}")
     print("=" * 70)
     print(f"\nStarted at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+
+    if dry_run:
+        print("\n🧪 DRY RUN MODE: Output will be saved to files, not Kafka")
+
     print("\nThis script will:")
     print("  1. Run Deployment Agent (discovers Confluent Cloud state)")
     print("  2. Run Usage Agent (generates synthetic usage data)")
@@ -49,41 +57,44 @@ def print_step(step_num: int, step_name: str):
     print("-" * 70 + "\n")
 
 
-async def run_bootstrap():
+async def run_bootstrap(dry_run=False):
     """Main bootstrap orchestration"""
-    print_header()
+    print_header(dry_run=dry_run)
 
     try:
         # Step 1: Deployment Agent (async, uses MCP)
         print_step(1, "Deployment Agent")
         start_time = time.time()
-        deployment_result = await run_deployment_agent()
+        deployment_result = await run_deployment_agent(dry_run=dry_run)
         print(f"\n⏱️  Deployment Agent completed in {time.time() - start_time:.2f}s")
 
-        # Brief pause to ensure Kafka commits
-        print("\n⏸️  Pausing 2 seconds for Kafka topic sync...")
-        time.sleep(2)
+        # Brief pause to ensure Kafka commits (or file writes in dry-run)
+        if not dry_run:
+            print("\n⏸️  Pausing 2 seconds for Kafka topic sync...")
+            time.sleep(2)
+        else:
+            time.sleep(0.5)  # Shorter pause in dry-run
 
         # Step 2: Usage Agent (sync)
         print_step(2, "Usage Agent")
         start_time = time.time()
-        usage_result = run_usage_agent()
+        usage_result = run_usage_agent(dry_run=dry_run)
         print(f"\n⏱️  Usage Agent completed in {time.time() - start_time:.2f}s")
 
-        time.sleep(2)
+        time.sleep(0.5 if dry_run else 2)
 
         # Step 3: Metrics Agent (sync)
         print_step(3, "Metrics Agent")
         start_time = time.time()
-        metrics_result = run_metrics_agent()
+        metrics_result = run_metrics_agent(dry_run=dry_run)
         print(f"\n⏱️  Metrics Agent completed in {time.time() - start_time:.2f}s")
 
-        time.sleep(2)
+        time.sleep(0.5 if dry_run else 2)
 
         # Step 4: Current State Prompt (sync, uses Claude)
         print_step(4, "Current State Prompt Agent")
         start_time = time.time()
-        current_state_result = run_current_state_prompt()
+        current_state_result = run_current_state_prompt(dry_run=dry_run)
         print(f"\n⏱️  Current State Prompt completed in {time.time() - start_time:.2f}s")
 
         # Final Summary
@@ -105,8 +116,13 @@ async def run_bootstrap():
                 print(f"  {i}. {obs}")
 
         print("\n" + "=" * 70)
-        print("\n✅ All agent state topics are now populated!")
-        print("✅ Current state is available in: agent-state-current")
+        if dry_run:
+            print("\n✅ All agent outputs saved to dry-run-output/ directory!")
+            print("✅ Current state is available in: dry-run-output/current-state.json")
+        else:
+            print("\n✅ All agent state topics are now populated!")
+            print("✅ Current state is available in: agent-state-current topic")
+
         print("\n📍 Next Steps:")
         print("  - Run Learning Prompt agent to generate ideas")
         print("  - Continue through agent-flow.md architecture")
@@ -130,17 +146,35 @@ async def run_bootstrap():
 
 
 if __name__ == "__main__":
-    # Check for required environment variables
+    # Parse command-line arguments
+    parser = argparse.ArgumentParser(
+        description="Bootstrap Agent Orchestration System",
+        epilog="Runs all monitoring agents and current state prompt in sequence"
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Dry run mode: save outputs to files instead of Kafka (skips env var checks)"
+    )
+    args = parser.parse_args()
+
+    # Check for required environment variables (skip in dry-run mode for some vars)
     import os
-    required_vars = [
-        "KAFKA_BOOTSTRAP_ENDPOINT",
-        "KAFKA_API_KEY",
-        "KAFKA_API_SECRET",
-        "SCHEMA_REGISTRY_URL",
-        "SCHEMA_REGISTRY_API_KEY",
-        "SCHEMA_REGISTRY_API_SECRET",
-        "ANTHROPIC_API_KEY"
-    ]
+
+    if args.dry_run:
+        # In dry-run, only Claude API key is required (for synthesis)
+        required_vars = ["ANTHROPIC_API_KEY"]
+    else:
+        # Normal mode requires all Kafka/Schema Registry credentials
+        required_vars = [
+            "KAFKA_BOOTSTRAP_ENDPOINT",
+            "KAFKA_API_KEY",
+            "KAFKA_API_SECRET",
+            "SCHEMA_REGISTRY_URL",
+            "SCHEMA_REGISTRY_API_KEY",
+            "SCHEMA_REGISTRY_API_SECRET",
+            "ANTHROPIC_API_KEY"
+        ]
 
     missing_vars = [var for var in required_vars if not os.getenv(var)]
 
@@ -148,8 +182,12 @@ if __name__ == "__main__":
         print("❌ Missing required environment variables:")
         for var in missing_vars:
             print(f"  - {var}")
-        print("\nPlease set these in your environment or .env file.")
+        if args.dry_run:
+            print("\nNote: In dry-run mode, only ANTHROPIC_API_KEY is required for Claude synthesis.")
+        else:
+            print("\nPlease set these in your environment or .env file.")
+            print("Tip: Use --dry-run to test without Kafka infrastructure.")
         sys.exit(1)
 
     # Run bootstrap
-    result = asyncio.run(run_bootstrap())
+    result = asyncio.run(run_bootstrap(dry_run=args.dry_run))

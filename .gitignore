@@ -20,5 +20,6 @@
 agents/discovery/discovery-outputs/
 agents/discovery/venv/
 agents/venv/
+agents/dry-run-output/
 agents/**/__pycache__/
 agents/**/*.pyc
