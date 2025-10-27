@@ -1,0 +1,52 @@
+{
+  "type": "record",
+  "name": "MetricsState",
+  "namespace": "com.datamesh.agent.state",
+  "doc": "Represents system health metrics and performance indicators",
+  "fields": [
+    {
+      "name": "timestamp",
+      "type": "string",
+      "doc": "ISO 8601 timestamp of when these metrics were captured"
+    },
+    {
+      "name": "total_throughput_mbps",
+      "type": "float",
+      "doc": "Total cluster throughput in megabytes per second"
+    },
+    {
+      "name": "avg_latency_ms",
+      "type": "float",
+      "doc": "Average end-to-end latency in milliseconds"
+    },
+    {
+      "name": "topics_with_lag",
+      "type": {
+        "type": "array",
+        "items": {
+          "type": "record",
+          "name": "TopicLag",
+          "fields": [
+            {"name": "topic_name", "type": "string"},
+            {"name": "consumer_group", "type": "string"},
+            {"name": "lag_messages", "type": "long"}
+          ]
+        }
+      },
+      "default": [],
+      "doc": "Topics experiencing consumer lag"
+    },
+    {
+      "name": "error_rate",
+      "type": "float",
+      "default": 0.0,
+      "doc": "Percentage of failed operations (0.0-1.0)"
+    },
+    {
+      "name": "storage_used_gb",
+      "type": ["float", "null"],
+      "default": null,
+      "doc": "Total storage used by the cluster in gigabytes"
+    }
+  ]
+}

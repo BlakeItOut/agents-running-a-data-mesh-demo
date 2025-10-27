@@ -2,8 +2,26 @@
 
 ```mermaid
 flowchart TD
-    %% Ideation Flow starts with Current State
-    CurrentState[Current State] --> LearningPrompt{Learning Prompt}
+    %% Monitoring Layer - Discovers and observes platform state
+    subgraph Monitoring["🔍 Monitoring Layer"]
+        DeploymentAgent{{Deployment Agent}}
+        UsageAgent{{Usage Agent}}
+        MetricsAgent{{Metrics Agent}}
+    end
+
+    %% Monitoring agents publish to state topics
+    DeploymentAgent --> DeploymentState[Deployment State]
+    UsageAgent --> UsageState[Usage State]
+    MetricsAgent --> MetricsState[Metrics State]
+
+    %% Current State Aggregation
+    DeploymentState --> CurrentStatePrompt{Current State Prompt}
+    UsageState --> CurrentStatePrompt
+    MetricsState --> CurrentStatePrompt
+    CurrentStatePrompt --> CurrentState[Current State]
+
+    %% Ideation Flow
+    CurrentState --> LearningPrompt{Learning Prompt}
     LearningPrompt --> RawIdea[Raw Idea]
     RawIdea --> HumanRefine[/Human Refine\]
 
@@ -47,24 +65,65 @@ flowchart TD
     ImplAgent --> PullRequest[Pull Request]
     PullRequest --> HumanPRApproval[/Human PR Approval\]
 
-    %% Deployment Approval Paths
-    HumanPRApproval -->|Approved| DeployedState[Deployed State]
+    %% Deployment creates new state that monitoring agents observe
+    HumanPRApproval -->|Approved| NewDeployment[New Deployment]
     HumanPRApproval -->|Changes Required| ImplAgent
 
-    %% Monitoring (outside main flow)
-    UsageAgent{{UsageAgent}} --> UsageState[UsageState]
-    MetricsAgent{{MetricsAgent}} --> MetricsState[MetricsState]
-
-    %% Current State Aggregation
-    DeployedState --> CurrentStatePrompt{Current State Prompt}
-    UsageState --> CurrentStatePrompt
-    MetricsState --> CurrentStatePrompt
-
-    CurrentStatePrompt --> CurrentState[Current State]
+    %% Feedback loop - new deployments are observed by monitoring agents
+    NewDeployment -.->|Observes changes| DeploymentAgent
 ```
 
 ## Legend
 - `{{Agent}}` = Hexagon = Agent
 - `{Prompt}` = Diamond = Prompt
-- `[Topic]` = Rectangle = Topic/Data Entity
+- `[Topic/State]` = Rectangle = Topic/Data Entity
 - `[/Human\]` = Parallelogram = Human in the Loop
+
+## Architecture Layers
+
+### 1. Monitoring Layer (Entry Point)
+The monitoring layer continuously observes the platform and publishes state to Kafka topics:
+
+- **Deployment Agent**: Discovers infrastructure state from Confluent Cloud
+  - Uses MCP (Model Context Protocol) to query topics, schemas, connectors
+  - Analyzes domain boundaries based on schema namespaces
+  - Publishes to `agent-state-deployment` topic
+
+- **Usage Agent**: Tracks consumption patterns and data usage
+  - Monitors consumer groups and consumption rates
+  - Identifies idle topics and high-traffic topics
+  - Publishes to `agent-state-usage` topic
+
+- **Metrics Agent**: Monitors system health and performance
+  - Tracks throughput, latency, error rates
+  - Detects consumer lag and bottlenecks
+  - Publishes to `agent-state-metrics` topic
+
+### 2. Current State Aggregation
+**Current State Prompt** synthesizes the three monitoring states:
+- Consumes from `agent-state-deployment`, `agent-state-usage`, `agent-state-metrics`
+- Uses Claude to generate human-readable summary and insights
+- Publishes aggregated view to `agent-state-current` topic
+- This becomes the input for ideation
+
+### 3. Ideation Layer
+**Learning Prompt** reads current state and generates improvement ideas:
+- Analyzes platform state for opportunities
+- Proposes data products, optimizations, governance improvements
+- Human refines/approves/rejects ideas
+
+### 4. Evaluation Layer
+Three specialized agents challenge approved ideas:
+- **Scope Agent**: Assesses complexity and scope creep risks
+- **Time Agent**: Estimates timeline and schedule risks
+- **Cost Agent**: Analyzes resource and cost implications
+
+### 5. Decision & Execution
+- **Decision Prompt**: Synthesizes challenges into recommendation
+- **Human Approval**: Final go/no-go decision
+- **Solution Agent**: Designs detailed implementation
+- **Implementation Agent**: Writes code and creates PR
+- **Human PR Approval**: Reviews before deployment
+
+### 6. Feedback Loop
+New deployments are observed by monitoring agents, updating Current State and enabling continuous improvement.

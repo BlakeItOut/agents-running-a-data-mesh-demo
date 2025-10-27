@@ -1,0 +1,94 @@
+{
+  "type": "record",
+  "name": "DeploymentState",
+  "namespace": "com.datamesh.agent.state",
+  "doc": "Represents the current deployment state of the data platform (topics, schemas, connectors)",
+  "fields": [
+    {
+      "name": "timestamp",
+      "type": "string",
+      "doc": "ISO 8601 timestamp of when this state was captured"
+    },
+    {
+      "name": "cluster_id",
+      "type": "string",
+      "doc": "Confluent Cloud cluster ID (e.g., lkc-xxxxx)"
+    },
+    {
+      "name": "environment_id",
+      "type": "string",
+      "doc": "Confluent Cloud environment ID (e.g., env-xxxxx)"
+    },
+    {
+      "name": "topics",
+      "type": {
+        "type": "array",
+        "items": {
+          "type": "record",
+          "name": "TopicInfo",
+          "fields": [
+            {"name": "name", "type": "string"},
+            {"name": "partitions", "type": ["int", "null"], "default": null},
+            {"name": "replication_factor", "type": ["int", "null"], "default": null}
+          ]
+        }
+      },
+      "doc": "List of all Kafka topics in the cluster"
+    },
+    {
+      "name": "schemas",
+      "type": {
+        "type": "array",
+        "items": {
+          "type": "record",
+          "name": "SchemaInfo",
+          "fields": [
+            {"name": "subject", "type": "string"},
+            {"name": "version", "type": "int"},
+            {"name": "schema_id", "type": "int"},
+            {"name": "schema_type", "type": "string", "default": "AVRO"},
+            {"name": "namespace", "type": ["string", "null"], "default": null}
+          ]
+        }
+      },
+      "doc": "List of all schemas registered in Schema Registry"
+    },
+    {
+      "name": "connectors",
+      "type": {
+        "type": "array",
+        "items": {
+          "type": "record",
+          "name": "ConnectorInfo",
+          "fields": [
+            {"name": "name", "type": "string"},
+            {"name": "type", "type": "string"},
+            {"name": "status", "type": ["string", "null"], "default": null}
+          ]
+        }
+      },
+      "doc": "List of all Kafka connectors"
+    },
+    {
+      "name": "domains",
+      "type": {
+        "type": "map",
+        "values": {
+          "type": "record",
+          "name": "DomainInfo",
+          "fields": [
+            {
+              "name": "topics",
+              "type": {"type": "array", "items": "string"}
+            },
+            {
+              "name": "topic_count",
+              "type": "int"
+            }
+          ]
+        }
+      },
+      "doc": "Discovered domain groupings based on schema namespaces"
+    }
+  ]
+}

@@ -16,6 +16,10 @@
 *.tfstate.*
 .terraform/
 
-# Agent outputs
+# Agent outputs and virtual environments
 agents/discovery/discovery-outputs/
 agents/discovery/venv/
+agents/venv/
+agents/dry-run-output/
+agents/**/__pycache__/
+agents/**/*.pyc
