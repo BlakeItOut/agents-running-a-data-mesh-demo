@@ -1,0 +1,14 @@
+# Agent Orchestration Dependencies
+
+# Confluent Kafka Client (with Avro support)
+confluent-kafka[avro]==2.7.0
+confluent-kafka[schema-registry]==2.7.0
+
+# MCP (Model Context Protocol) for Confluent Cloud
+mcp==1.3.2
+
+# Anthropic SDK for Claude API
+anthropic==0.44.0
+
+# Additional utilities
+python-dotenv==1.0.1

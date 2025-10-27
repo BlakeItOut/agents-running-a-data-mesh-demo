@@ -1,0 +1,48 @@
+{
+  "type": "record",
+  "name": "UsageState",
+  "namespace": "com.datamesh.agent.state",
+  "doc": "Represents usage patterns and consumption metrics of the data platform",
+  "fields": [
+    {
+      "name": "timestamp",
+      "type": "string",
+      "doc": "ISO 8601 timestamp of when this state was captured"
+    },
+    {
+      "name": "consumer_groups",
+      "type": "int",
+      "doc": "Total number of active consumer groups"
+    },
+    {
+      "name": "active_consumers",
+      "type": "int",
+      "doc": "Total number of active consumer instances across all groups"
+    },
+    {
+      "name": "top_topics_by_consumption",
+      "type": {
+        "type": "array",
+        "items": {
+          "type": "record",
+          "name": "TopicConsumption",
+          "fields": [
+            {"name": "topic_name", "type": "string"},
+            {"name": "consumer_count", "type": "int"},
+            {"name": "messages_per_second", "type": ["float", "null"], "default": null}
+          ]
+        }
+      },
+      "doc": "Topics ranked by consumption activity"
+    },
+    {
+      "name": "idle_topics",
+      "type": {
+        "type": "array",
+        "items": "string"
+      },
+      "default": [],
+      "doc": "Topics with no active consumers"
+    }
+  ]
+}
