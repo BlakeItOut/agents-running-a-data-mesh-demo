@@ -23,28 +23,51 @@ from common.schema_utils import get_schema_string
 
 def generate_synthetic_usage_state():
     """
-    Generate synthetic usage state.
+    Generate synthetic usage state showing active cluster usage.
 
-    Since the data mesh is just raw datagen connectors with no consumers yet,
-    we'll generate minimal usage data showing idle state.
+    Simulates a realistic production environment with multiple consumer groups
+    actively processing data from various domains.
     """
     timestamp = datetime.now(UTC).isoformat()
 
+    # Simulate realistic consumer groups across different domains
+    consumer_groups = [
+        "analytics-clickstream-processor",
+        "fraud-detection-transactions",
+        "fleet-realtime-monitoring",
+        "gaming-analytics-pipeline",
+        "ecommerce-order-processor",
+        "insurance-claims-analyzer",
+        "data-warehouse-sync"
+    ]
+
+    # Top topics by consumption (messages/sec)
+    top_topics = [
+        {"topic": "clickstream", "messages_per_sec": 1247, "consumer_lag": 125},
+        {"topic": "transactions", "messages_per_sec": 856, "consumer_lag": 0},
+        {"topic": "fleet_mgmt_location", "messages_per_sec": 723, "consumer_lag": 45},
+        {"topic": "gaming_player_activity", "messages_per_sec": 612, "consumer_lag": 203},
+        {"topic": "orders", "messages_per_sec": 445, "consumer_lag": 12},
+        {"topic": "stock_trades", "messages_per_sec": 389, "consumer_lag": 0},
+        {"topic": "insurance_customer_activity", "messages_per_sec": 267, "consumer_lag": 88},
+        {"topic": "shoes", "messages_per_sec": 198, "consumer_lag": 0},
+        {"topic": "pageviews", "messages_per_sec": 156, "consumer_lag": 34},
+        {"topic": "users", "messages_per_sec": 89, "consumer_lag": 0}
+    ]
+
+    # A few topics remain idle (recently added or low priority)
+    idle_topics = [
+        "pizza_orders_cancelled",
+        "device_information",
+        "syslog_logs"
+    ]
+
     usage_state = {
         "timestamp": timestamp,
-        "consumer_groups": 0,  # No active consumer groups yet
-        "active_consumers": 0,  # No active consumers yet
-        "top_topics_by_consumption": [],  # No consumption activity
-        "idle_topics": [
-            # All 37 topics are idle (could query from deployment state in real impl)
-            "fleet_mgmt_sensors",
-            "gaming_player_activity",
-            "pizza_orders",
-            "clickstream",
-            "users",
-            "orders",
-            # ... (abbreviated for synthetic data)
-        ]
+        "consumer_groups": len(consumer_groups),
+        "active_consumers": 24,  # Multiple consumers across the 7 groups
+        "top_topics_by_consumption": top_topics,
+        "idle_topics": idle_topics
     }
 
     return usage_state
@@ -61,6 +84,7 @@ def run_usage_agent(dry_run=False):
 
     print(f"   Consumer Groups: {usage_state['consumer_groups']}")
     print(f"   Active Consumers: {usage_state['active_consumers']}")
+    print(f"   Top Consumed Topics: {len(usage_state['top_topics_by_consumption'])}")
     print(f"   Idle Topics: {len(usage_state['idle_topics'])}")
 
     # Publish to Kafka or save to file

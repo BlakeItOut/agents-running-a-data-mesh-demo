@@ -23,22 +23,35 @@ from common.schema_utils import get_schema_string
 
 def generate_synthetic_metrics_state():
     """
-    Generate synthetic metrics state.
+    Generate synthetic metrics state showing active cluster usage.
 
-    Estimates based on 37 datagen connectors producing 1 msg/sec each:
-    - 37 messages/sec total
-    - Assuming avg message size ~1KB = 0.037 MB/sec
-    - Latency should be low with no consumers
+    Simulates a realistic production environment with high throughput,
+    some consumer lag, and healthy but utilized infrastructure.
     """
     timestamp = datetime.now(UTC).isoformat()
 
+    # Topics with consumer lag (from usage patterns)
+    topics_with_lag = [
+        {"topic": "gaming_player_activity", "lag": 203, "partition": 2},
+        {"topic": "clickstream", "lag": 125, "partition": 4},
+        {"topic": "insurance_customer_activity", "lag": 88, "partition": 1},
+        {"topic": "fleet_mgmt_location", "lag": 45, "partition": 3},
+        {"topic": "pageviews", "lag": 34, "partition": 0},
+        {"topic": "orders", "lag": 12, "partition": 1}
+    ]
+
+    # Production-level throughput
+    # Top 10 topics: ~5000 msgs/sec, avg 2KB/msg = ~10 MB/s
+    # Plus remaining 27 topics at lower rates = ~15 MB/s total
+    total_throughput_mbps = 15.3
+
     metrics_state = {
         "timestamp": timestamp,
-        "total_throughput_mbps": 0.037,  # ~37 KB/sec = 0.037 MB/sec
-        "avg_latency_ms": 45.0,  # Low latency, typical for datagen
-        "topics_with_lag": [],  # No consumers = no lag
-        "error_rate": 0.0,  # No errors in synthetic environment
-        "storage_used_gb": 2.5  # Estimated storage for 37 topics with 7-day retention
+        "total_throughput_mbps": total_throughput_mbps,
+        "avg_latency_ms": 32.0,  # Low latency, healthy cluster
+        "topics_with_lag": topics_with_lag,
+        "error_rate": 0.002,  # 0.2% error rate (realistic for production)
+        "storage_used_gb": 847.5  # Realistic storage for active 37 topics over 7 days
     }
 
     return metrics_state
@@ -55,7 +68,8 @@ def run_metrics_agent(dry_run=False):
 
     print(f"   Throughput: {metrics_state['total_throughput_mbps']} MB/s")
     print(f"   Avg Latency: {metrics_state['avg_latency_ms']} ms")
-    print(f"   Error Rate: {metrics_state['error_rate'] * 100}%")
+    print(f"   Error Rate: {metrics_state['error_rate'] * 100:.1f}%")
+    print(f"   Topics with Lag: {len(metrics_state['topics_with_lag'])}")
     print(f"   Storage Used: {metrics_state['storage_used_gb']} GB")
 
     # Publish to Kafka or save to file
