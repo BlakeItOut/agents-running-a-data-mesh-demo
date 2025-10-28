@@ -77,6 +77,7 @@ def get_bedrock_client():
 
     # Check for Bedrock API key and set AWS_BEARER_TOKEN_BEDROCK
     # AWS Bedrock API keys use bearer token authentication
+    # The key must include the "bedrock-api-key-" prefix
     bedrock_api_key = os.getenv('BEDROCK_API_KEY')
     if bedrock_api_key:
         os.environ['AWS_BEARER_TOKEN_BEDROCK'] = bedrock_api_key

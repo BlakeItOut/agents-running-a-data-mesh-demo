@@ -16,7 +16,6 @@ resource "confluent_kafka_topic" "agent_state_deployment" {
 
   config = {
     "cleanup.policy"      = "compact"
-    "compression.type"    = "snappy"
     "retention.ms"        = "-1"  # Infinite retention
     "min.compaction.lag.ms" = "60000"  # Wait 1 minute before compacting
   }
@@ -39,7 +38,6 @@ resource "confluent_kafka_topic" "agent_state_usage" {
 
   config = {
     "cleanup.policy"      = "compact"
-    "compression.type"    = "snappy"
     "retention.ms"        = "-1"
     "min.compaction.lag.ms" = "60000"
   }
@@ -62,7 +60,6 @@ resource "confluent_kafka_topic" "agent_state_metrics" {
 
   config = {
     "cleanup.policy"      = "compact"
-    "compression.type"    = "snappy"
     "retention.ms"        = "-1"
     "min.compaction.lag.ms" = "60000"
   }
@@ -87,7 +84,6 @@ resource "confluent_kafka_topic" "agent_state_current" {
 
   config = {
     "cleanup.policy"      = "compact"
-    "compression.type"    = "snappy"
     "retention.ms"        = "-1"
     "min.compaction.lag.ms" = "60000"
   }
@@ -112,7 +108,6 @@ resource "confluent_kafka_topic" "agent_state_raw_ideas" {
 
   config = {
     "cleanup.policy"      = "compact"
-    "compression.type"    = "snappy"
     "retention.ms"        = "-1"
     "min.compaction.lag.ms" = "60000"
   }
@@ -137,7 +132,6 @@ resource "confluent_kafka_topic" "agent_state_scope_challenges" {
 
   config = {
     "cleanup.policy"      = "compact"
-    "compression.type"    = "snappy"
     "retention.ms"        = "-1"
     "min.compaction.lag.ms" = "60000"
   }
@@ -160,7 +154,6 @@ resource "confluent_kafka_topic" "agent_state_time_challenges" {
 
   config = {
     "cleanup.policy"      = "compact"
-    "compression.type"    = "snappy"
     "retention.ms"        = "-1"
     "min.compaction.lag.ms" = "60000"
   }
@@ -183,7 +176,6 @@ resource "confluent_kafka_topic" "agent_state_cost_challenges" {
 
   config = {
     "cleanup.policy"      = "compact"
-    "compression.type"    = "snappy"
     "retention.ms"        = "-1"
     "min.compaction.lag.ms" = "60000"
   }
@@ -206,7 +198,6 @@ resource "confluent_kafka_topic" "agent_state_decisions" {
 
   config = {
     "cleanup.policy"      = "compact"
-    "compression.type"    = "snappy"
     "retention.ms"        = "-1"
     "min.compaction.lag.ms" = "60000"
   }
