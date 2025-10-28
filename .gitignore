@@ -1,5 +1,9 @@
 # Environment files with secrets
 .env
+**/.env
+*.env
+!.env.example
+!**/.env.example
 
 # Mac files
 .DS_Store
