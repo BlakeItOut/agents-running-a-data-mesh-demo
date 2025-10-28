@@ -46,8 +46,6 @@ User-created file containing cluster-specific credentials from Terraform outputs
 - `SCHEMA_REGISTRY_URL` - Schema Registry REST endpoint
 - `SCHEMA_REGISTRY_API_KEY` - Schema Registry API key
 - `SCHEMA_REGISTRY_API_SECRET` - Schema Registry API secret
-- `CONFLUENT_CLOUD_API_KEY` - Org-level Cloud API key (for MCP/metrics via deployment agent)
-- `CONFLUENT_CLOUD_API_SECRET` - Org-level Cloud API secret
 - `ANTHROPIC_API_KEY` - Claude API key (get from https://console.anthropic.com/)
 - `KAFKA_CLUSTER_ID` (optional) - Cluster ID for API operations
 - `KAFKA_ENVIRONMENT_ID` (optional) - Environment ID for API operations
@@ -81,27 +79,30 @@ terraform apply
 
 ### Step 3: Create Agents .env
 
-After Terraform completes, extract the outputs and populate `agents/.env`:
+After Terraform completes, use the setup script to automatically populate `agents/.env`:
 
 ```bash
-# View Terraform outputs
-terraform output
+# Option 1: Use the setup script (recommended)
+./scripts/setup-agents-env.sh
+# This will extract Terraform outputs and prompt for your Anthropic API key
 
-# Copy agent template
+# Option 2: Manual setup
+terraform output      # View outputs
 cd ..
 cp agents/.env.example agents/.env
-
-# Edit agents/.env with Terraform outputs
-nano agents/.env
+nano agents/.env      # Copy values manually
 ```
 
-**Key Terraform Outputs to Copy:**
+**The setup script automatically extracts:**
 - `kafka_bootstrap_endpoint` → `KAFKA_BOOTSTRAP_ENDPOINT`
 - `kafka_api_key` → `KAFKA_API_KEY`
 - `kafka_api_secret` → `KAFKA_API_SECRET`
 - `schema_registry_rest_endpoint` → `SCHEMA_REGISTRY_URL`
 - `schema_registry_api_key` → `SCHEMA_REGISTRY_API_KEY`
 - `schema_registry_api_secret` → `SCHEMA_REGISTRY_API_SECRET`
+- `cluster_id` → `KAFKA_CLUSTER_ID`
+- `environment_id` → `KAFKA_ENVIRONMENT_ID`
+- Prompts you for `ANTHROPIC_API_KEY`
 
 ### Step 4: Run Bootstrap
 
@@ -117,7 +118,7 @@ bootstrap.py automatically loads credentials from `agents/.env` and runs all mon
 ### Cloud API Keys (Organization-Level)
 - **Source:** Confluent Cloud Console → Cloud API Keys
 - **Permissions:** Organization-wide access for provisioning and management
-- **Used by:** Terraform, agent monitoring/metrics collection
+- **Used by:** Terraform only
 - **Scope:** All environments and clusters
 
 ### Cluster API Keys (Cluster-Specific)
