@@ -220,7 +220,7 @@ git commit -m "fix: remove .env files from git tracking"
     ├── .env.example              # Agent template (committed)
     ├── bootstrap.py              # Main entry point for agents
     ├── monitoring/               # Deployment, Usage, Metrics agents
-    └── ideation/                 # Current State Prompt agent
+    └── ideation/                 # Current State agent
 ```
 
 ## FAQ

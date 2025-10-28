@@ -2,15 +2,15 @@
 """
 Bootstrap Script for Agent Orchestration
 
-Runs all monitoring agents and the current state prompt agent in sequence.
+Runs all monitoring agents and the current state agent in sequence.
 
 Flow:
 1. Deployment Agent → agent-state-deployment (or dry-run-output/deployment-state.json)
 2. Usage Agent → agent-state-usage (or dry-run-output/usage-state.json)
 3. Metrics Agent → agent-state-metrics (or dry-run-output/metrics-state.json)
-4. Current State Prompt → agent-state-current (or dry-run-output/current-state.json)
+4. Current State → agent-state-current (or dry-run-output/current-state.json)
 
-This establishes the initial "Current State" for the Learning Prompt agent.
+This establishes the initial "Current State" for the Learning Agent.
 
 Supports --dry-run mode for testing without Kafka infrastructure.
 """
@@ -28,7 +28,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from monitoring.deployment import run_deployment_agent
 from monitoring.usage import run_usage_agent
 from monitoring.metrics import run_metrics_agent
-from ideation.current_state_prompt import run_current_state_prompt
+from ideation.current_state import run_current_state
 
 
 def print_header(dry_run=False):
@@ -46,7 +46,7 @@ def print_header(dry_run=False):
     print("  1. Run Deployment Agent (discovers Confluent Cloud state)")
     print("  2. Run Usage Agent (generates synthetic usage data)")
     print("  3. Run Metrics Agent (generates synthetic metrics data)")
-    print("  4. Run Current State Prompt (synthesizes with Claude)")
+    print("  4. Run Current State (synthesizes with Claude)")
     print("\n" + "=" * 70 + "\n")
 
 
@@ -91,11 +91,11 @@ async def run_bootstrap(dry_run=False):
 
         time.sleep(0.5 if dry_run else 2)
 
-        # Step 4: Current State Prompt (sync, uses Claude)
-        print_step(4, "Current State Prompt Agent")
+        # Step 4: Current State (sync, uses Claude)
+        print_step(4, "Current State Agent")
         start_time = time.time()
-        current_state_result = run_current_state_prompt(dry_run=dry_run)
-        print(f"\n⏱️  Current State Prompt completed in {time.time() - start_time:.2f}s")
+        current_state_result = run_current_state(dry_run=dry_run)
+        print(f"\n⏱️  Current State completed in {time.time() - start_time:.2f}s")
 
         # Final Summary
         print("\n" + "=" * 70)
@@ -124,7 +124,7 @@ async def run_bootstrap(dry_run=False):
             print("✅ Current state is available in: agent-state-current topic")
 
         print("\n📍 Next Steps:")
-        print("  - Run Learning Prompt agent to generate ideas")
+        print("  - Run Learning Agent to generate ideas")
         print("  - Continue through agent-flow.md architecture")
         print("\n" + "=" * 70 + "\n")
 
@@ -149,7 +149,7 @@ if __name__ == "__main__":
     # Parse command-line arguments
     parser = argparse.ArgumentParser(
         description="Bootstrap Agent Orchestration System",
-        epilog="Runs all monitoring agents and current state prompt in sequence"
+        epilog="Runs all monitoring agents and current state in sequence"
     )
     parser.add_argument(
         "--dry-run",

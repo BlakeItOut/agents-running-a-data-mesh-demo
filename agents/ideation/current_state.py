@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Current State Prompt Agent
+Current State Agent
 
 Consumes from three pre-current-state topics:
   - agent-state-deployment
@@ -10,7 +10,7 @@ Consumes from three pre-current-state topics:
 Uses Claude to synthesize them into a coherent summary, then publishes
 to agent-state-current topic.
 
-This aggregated state becomes the input to the Learning Prompt agent.
+This aggregated state becomes the input to the Learning Agent.
 """
 
 import argparse
@@ -93,7 +93,7 @@ def consume_pre_current_state_topics(dry_run=False):
     deployment_schema = get_schema_string("deployment-state")
     deployment_consumer, deployment_deserializer = create_avro_consumer(
         deployment_schema,
-        group_id="current-state-prompt-deployment"
+        group_id="current-state-deployment"
     )
     deployment_state = consume_latest_message(
         deployment_consumer,
@@ -111,7 +111,7 @@ def consume_pre_current_state_topics(dry_run=False):
     usage_schema = get_schema_string("usage-state")
     usage_consumer, usage_deserializer = create_avro_consumer(
         usage_schema,
-        group_id="current-state-prompt-usage"
+        group_id="current-state-usage"
     )
     usage_state = consume_latest_message(
         usage_consumer,
@@ -129,7 +129,7 @@ def consume_pre_current_state_topics(dry_run=False):
     metrics_schema = get_schema_string("metrics-state")
     metrics_consumer, metrics_deserializer = create_avro_consumer(
         metrics_schema,
-        group_id="current-state-prompt-metrics"
+        group_id="current-state-metrics"
     )
     metrics_state = consume_latest_message(
         metrics_consumer,
@@ -199,10 +199,10 @@ def create_current_state_snapshot(deployment, usage, metrics, claude_synthesis):
     return current_state
 
 
-def run_current_state_prompt(dry_run=False):
-    """Main current state prompt agent logic"""
+def run_current_state(dry_run=False):
+    """Main current state agent logic"""
     print("=" * 60)
-    print("CURRENT STATE PROMPT AGENT" + (" (DRY RUN)" if dry_run else ""))
+    print("CURRENT STATE AGENT" + (" (DRY RUN)" if dry_run else ""))
     print("=" * 60)
 
     # Step 1: Consume from pre-current-state topics or load from files
@@ -265,19 +265,19 @@ def run_current_state_prompt(dry_run=False):
             raise
 
     print("\n" + "=" * 60)
-    print("CURRENT STATE PROMPT COMPLETE")
+    print("CURRENT STATE COMPLETE")
     print("=" * 60)
 
     return current_state
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Current State Prompt Agent - Synthesizes monitoring states with Claude")
+    parser = argparse.ArgumentParser(description="Current State Agent - Synthesizes monitoring states with Claude")
     parser.add_argument("--dry-run", action="store_true",
                        help="Dry run mode: read from files and save output to file instead of using Kafka")
     args = parser.parse_args()
 
-    result = run_current_state_prompt(dry_run=args.dry_run)
+    result = run_current_state(dry_run=args.dry_run)
 
     # Print summary
     print(f"\nCurrent State Summary:")

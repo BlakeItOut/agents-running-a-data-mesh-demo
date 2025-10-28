@@ -31,13 +31,14 @@ def generate_synthetic_metrics_state():
     timestamp = datetime.now(UTC).isoformat()
 
     # Topics with consumer lag (from usage patterns)
+    # Note: lag_messages is total lag across partitions for this consumer group
     topics_with_lag = [
-        {"topic": "gaming_player_activity", "lag": 203, "partition": 2},
-        {"topic": "clickstream", "lag": 125, "partition": 4},
-        {"topic": "insurance_customer_activity", "lag": 88, "partition": 1},
-        {"topic": "fleet_mgmt_location", "lag": 45, "partition": 3},
-        {"topic": "pageviews", "lag": 34, "partition": 0},
-        {"topic": "orders", "lag": 12, "partition": 1}
+        {"topic_name": "gaming_player_activity", "consumer_group": "gaming-analytics-pipeline", "lag_messages": 203},
+        {"topic_name": "clickstream", "consumer_group": "analytics-clickstream-processor", "lag_messages": 125},
+        {"topic_name": "insurance_customer_activity", "consumer_group": "insurance-claims-analyzer", "lag_messages": 88},
+        {"topic_name": "fleet_mgmt_location", "consumer_group": "fleet-realtime-monitoring", "lag_messages": 45},
+        {"topic_name": "pageviews", "consumer_group": "analytics-clickstream-processor", "lag_messages": 34},
+        {"topic_name": "orders", "consumer_group": "ecommerce-order-processor", "lag_messages": 12}
     ]
 
     # Production-level throughput

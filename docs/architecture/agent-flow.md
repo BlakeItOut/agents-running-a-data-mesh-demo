@@ -15,14 +15,14 @@ flowchart TD
     MetricsAgent --> MetricsState[Metrics State]
 
     %% Current State Aggregation
-    DeploymentState --> CurrentStatePrompt{Current State Prompt}
-    UsageState --> CurrentStatePrompt
-    MetricsState --> CurrentStatePrompt
-    CurrentStatePrompt --> CurrentState[Current State]
+    DeploymentState --> CurrentStateAgent{Current State}
+    UsageState --> CurrentStateAgent
+    MetricsState --> CurrentStateAgent
+    CurrentStateAgent --> CurrentState[Current State]
 
     %% Ideation Flow
-    CurrentState --> LearningPrompt{Learning Prompt}
-    LearningPrompt --> RawIdea[Raw Idea]
+    CurrentState --> LearningAgent{Learning}
+    LearningAgent --> RawIdea[Raw Idea]
     RawIdea --> HumanRefine[/Human Refine\]
 
     %% Early Approval Path
@@ -49,7 +49,7 @@ flowchart TD
     %% Final Approval Paths
     HumanApproval -->|Approved| ApprovedIdea[Approved Idea]
     HumanApproval -->|Rejected| UnapprovedIdea
-    UnapprovedIdea -.->|Loop Back| LearningPrompt
+    UnapprovedIdea -.->|Loop Back| LearningAgent
 
     %% Solution Design
     ApprovedIdea --> SolutionAgent{{Solution Agent}}
@@ -100,14 +100,14 @@ The monitoring layer continuously observes the platform and publishes state to K
   - Publishes to `agent-state-metrics` topic
 
 ### 2. Current State Aggregation
-**Current State Prompt** synthesizes the three monitoring states:
+**Current State** synthesizes the three monitoring states:
 - Consumes from `agent-state-deployment`, `agent-state-usage`, `agent-state-metrics`
 - Uses Claude to generate human-readable summary and insights
 - Publishes aggregated view to `agent-state-current` topic
 - This becomes the input for ideation
 
 ### 3. Ideation Layer
-**Learning Prompt** reads current state and generates improvement ideas:
+**Learning Agent** reads current state and generates improvement ideas:
 - Analyzes platform state for opportunities
 - Proposes data products, optimizations, governance improvements
 - Human refines/approves/rejects ideas
