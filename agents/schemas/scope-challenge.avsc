@@ -1,0 +1,92 @@
+{
+  "type": "record",
+  "name": "ScopeChallenge",
+  "namespace": "com.datamesh.agent.evaluation",
+  "doc": "Scope analysis and complexity assessment for an approved data product idea",
+  "fields": [
+    {
+      "name": "timestamp",
+      "type": "string",
+      "doc": "ISO 8601 timestamp of when this challenge was generated"
+    },
+    {
+      "name": "challenge_id",
+      "type": "string",
+      "doc": "Unique identifier for this challenge (UUID)"
+    },
+    {
+      "name": "idea_id",
+      "type": "string",
+      "doc": "Reference to the idea being evaluated"
+    },
+    {
+      "name": "idea_title",
+      "type": "string",
+      "doc": "Title of the idea being evaluated (for readability)"
+    },
+    {
+      "name": "complexity_rating",
+      "type": {
+        "type": "enum",
+        "name": "ComplexityRating",
+        "symbols": ["TRIVIAL", "SIMPLE", "MODERATE", "COMPLEX", "VERY_COMPLEX"]
+      },
+      "doc": "Detailed complexity assessment after evaluation"
+    },
+    {
+      "name": "scope_creep_risk",
+      "type": {
+        "type": "enum",
+        "name": "RiskLevel",
+        "symbols": ["MINIMAL", "LOW", "MODERATE", "HIGH", "CRITICAL"]
+      },
+      "doc": "Risk of scope expanding beyond initial estimates"
+    },
+    {
+      "name": "technical_challenges",
+      "type": {
+        "type": "array",
+        "items": "string"
+      },
+      "doc": "List of identified technical challenges and complexities"
+    },
+    {
+      "name": "integration_points",
+      "type": {
+        "type": "array",
+        "items": "string"
+      },
+      "default": [],
+      "doc": "Systems, services, or components that need integration"
+    },
+    {
+      "name": "dependencies",
+      "type": {
+        "type": "array",
+        "items": "string"
+      },
+      "default": [],
+      "doc": "External dependencies or prerequisites required"
+    },
+    {
+      "name": "recommended_scope_adjustments",
+      "type": {
+        "type": "array",
+        "items": "string"
+      },
+      "default": [],
+      "doc": "Suggestions to reduce scope or manage complexity"
+    },
+    {
+      "name": "confidence_score",
+      "type": "float",
+      "default": 0.7,
+      "doc": "Agent's confidence in this assessment (0.0 to 1.0)"
+    },
+    {
+      "name": "reasoning",
+      "type": "string",
+      "doc": "Detailed reasoning for the scope assessment"
+    }
+  ]
+}

@@ -1,0 +1,107 @@
+{
+  "type": "record",
+  "name": "TimeChallenge",
+  "namespace": "com.datamesh.agent.evaluation",
+  "doc": "Timeline estimation and schedule risk assessment for an approved data product idea",
+  "fields": [
+    {
+      "name": "timestamp",
+      "type": "string",
+      "doc": "ISO 8601 timestamp of when this challenge was generated"
+    },
+    {
+      "name": "challenge_id",
+      "type": "string",
+      "doc": "Unique identifier for this challenge (UUID)"
+    },
+    {
+      "name": "idea_id",
+      "type": "string",
+      "doc": "Reference to the idea being evaluated"
+    },
+    {
+      "name": "idea_title",
+      "type": "string",
+      "doc": "Title of the idea being evaluated (for readability)"
+    },
+    {
+      "name": "estimated_duration_weeks",
+      "type": "float",
+      "doc": "Estimated implementation duration in weeks"
+    },
+    {
+      "name": "best_case_weeks",
+      "type": "float",
+      "doc": "Best-case scenario timeline"
+    },
+    {
+      "name": "worst_case_weeks",
+      "type": "float",
+      "doc": "Worst-case scenario timeline"
+    },
+    {
+      "name": "schedule_risk",
+      "type": {
+        "type": "enum",
+        "name": "ScheduleRisk",
+        "symbols": ["MINIMAL", "LOW", "MODERATE", "HIGH", "CRITICAL"]
+      },
+      "doc": "Overall risk to timeline and schedule"
+    },
+    {
+      "name": "implementation_phases",
+      "type": {
+        "type": "array",
+        "items": {
+          "type": "record",
+          "name": "Phase",
+          "fields": [
+            {
+              "name": "name",
+              "type": "string"
+            },
+            {
+              "name": "duration_weeks",
+              "type": "float"
+            },
+            {
+              "name": "description",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "default": [],
+      "doc": "Breakdown of implementation into phases"
+    },
+    {
+      "name": "time_risk_factors",
+      "type": {
+        "type": "array",
+        "items": "string"
+      },
+      "default": [],
+      "doc": "Factors that could delay the timeline"
+    },
+    {
+      "name": "parallel_work_opportunities",
+      "type": {
+        "type": "array",
+        "items": "string"
+      },
+      "default": [],
+      "doc": "Tasks that can be done in parallel to save time"
+    },
+    {
+      "name": "confidence_score",
+      "type": "float",
+      "default": 0.7,
+      "doc": "Agent's confidence in this timeline estimate (0.0 to 1.0)"
+    },
+    {
+      "name": "reasoning",
+      "type": "string",
+      "doc": "Detailed reasoning for the timeline assessment"
+    }
+  ]
+}

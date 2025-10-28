@@ -35,9 +35,14 @@ from monitoring.metrics import run_metrics_agent
 from ideation.current_state import run_current_state
 from ideation.learning import run_learning_agent
 from human_refinement import run_human_refinement
+from evaluation.scope import run_scope_agent
+from evaluation.time import run_time_agent
+from evaluation.cost import run_cost_agent
+from evaluation.decision import run_decision_agent
+from human_approval import run_human_approval
 
 
-def print_header(dry_run=False, include_learning=False):
+def print_header(dry_run=False, include_learning=False, include_evaluation=False):
     """Print bootstrap header"""
     print("\n" + "=" * 70)
     mode = " (DRY RUN MODE)" if dry_run else ""
@@ -55,6 +60,9 @@ def print_header(dry_run=False, include_learning=False):
     print("  4. Run Current State (synthesizes with Claude)")
     if include_learning:
         print("  5. Run Learning Agent (generates data product ideas)")
+    if include_evaluation:
+        print("  6. Run Evaluation Agents (Scope, Time, Cost)")
+        print("  7. Run Decision Agent (synthesize evaluation)")
     print("\n" + "=" * 70 + "\n")
 
 
@@ -74,9 +82,18 @@ def pause_for_user(step_name):
     input()
 
 
-async def run_bootstrap(dry_run=False, include_learning=False, interactive=False, pause_between_steps=False):
+async def run_bootstrap(dry_run=False, include_learning=False, include_evaluation=False, interactive=False, pause_between_steps=False):
     """Main bootstrap orchestration"""
-    print_header(dry_run=dry_run, include_learning=include_learning)
+    print_header(dry_run=dry_run, include_learning=include_learning, include_evaluation=include_evaluation)
+
+    # Clean dry-run output directory for fresh demo runs
+    if dry_run:
+        output_dir = Path(__file__).parent / "dry-run-output"
+        if output_dir.exists():
+            # Remove all JSON files from previous runs
+            for json_file in output_dir.glob("*.json"):
+                json_file.unlink()
+            print(f"🧹 Cleaned dry-run-output directory for fresh run\n")
 
     try:
         # Step 1: Deployment Agent (async, uses MCP)
@@ -174,6 +191,7 @@ async def run_bootstrap(dry_run=False, include_learning=False, interactive=False
                     print(f"  ... and {len(learning_result) - 3} more")
 
         # Step 6 (Optional): Human Refinement
+        refinement_done = False
         if interactive and learning_result:
             print("\n" + "=" * 70)
             print("LAUNCHING HUMAN REFINEMENT INTERFACE")
@@ -183,11 +201,85 @@ async def run_bootstrap(dry_run=False, include_learning=False, interactive=False
                 print("Press Enter to continue...")
                 input()
 
-            run_human_refinement(dry_run=dry_run)
+            run_human_refinement(dry_run=dry_run, stop_after_first=include_evaluation)
+            refinement_done = True
 
             print("\n" + "=" * 70)
             print("HUMAN REFINEMENT COMPLETE")
             print("=" * 70)
+
+            if pause_between_steps:
+                pause_for_user("Human Refinement")
+
+        # Phase 3: Evaluation Layer (Iron Triangle)
+        evaluation_results = None
+        if include_evaluation and (refinement_done or not interactive):
+            time.sleep(0.5 if dry_run else 2)
+
+            # Step 6/7: Scope Agent
+            print_step(6, "Scope Agent (Complexity Analysis)")
+            start_time = time.time()
+            scope_result = run_scope_agent(dry_run=dry_run, limit_one=interactive)
+            print(f"\n⏱️  Scope Agent completed in {time.time() - start_time:.2f}s")
+
+            if pause_between_steps:
+                pause_for_user("Scope Agent")
+
+            time.sleep(0.5 if dry_run else 1)
+
+            # Step 7/8: Time Agent
+            print_step(7, "Time Agent (Timeline Analysis)")
+            start_time = time.time()
+            time_result = run_time_agent(dry_run=dry_run, limit_one=interactive)
+            print(f"\n⏱️  Time Agent completed in {time.time() - start_time:.2f}s")
+
+            if pause_between_steps:
+                pause_for_user("Time Agent")
+
+            time.sleep(0.5 if dry_run else 1)
+
+            # Step 8/9: Cost Agent
+            print_step(8, "Cost Agent (Budget Analysis)")
+            start_time = time.time()
+            cost_result = run_cost_agent(dry_run=dry_run, limit_one=interactive)
+            print(f"\n⏱️  Cost Agent completed in {time.time() - start_time:.2f}s")
+
+            if pause_between_steps:
+                pause_for_user("Cost Agent")
+
+            time.sleep(0.5 if dry_run else 1)
+
+            # Step 9/10: Decision Agent
+            print_step(9, "Decision Agent (Shark Tank Panel)")
+            start_time = time.time()
+            decision_result = run_decision_agent(dry_run=dry_run)
+            print(f"\n⏱️  Decision Agent completed in {time.time() - start_time:.2f}s")
+
+            if pause_between_steps:
+                pause_for_user("Decision Agent")
+
+            evaluation_results = {
+                "scope": scope_result,
+                "time": time_result,
+                "cost": cost_result,
+                "decisions": decision_result
+            }
+
+            # Step 10/11 (Optional): Human Approval
+            if interactive and decision_result:
+                print("\n" + "=" * 70)
+                print("LAUNCHING HUMAN APPROVAL INTERFACE")
+                print("=" * 70)
+                print("\nReview and approve/reject the final decisions...")
+                if not pause_between_steps:
+                    print("Press Enter to continue...")
+                    input()
+
+                run_human_approval(dry_run=dry_run)
+
+                print("\n" + "=" * 70)
+                print("HUMAN APPROVAL COMPLETE")
+                print("=" * 70)
 
         print("\n📍 Next Steps:")
         if not include_learning:
@@ -198,9 +290,14 @@ async def run_bootstrap(dry_run=False, include_learning=False, interactive=False
             print("    python human_refinement.py" + (" --dry-run" if dry_run else ""))
             print("  OR run interactively next time:")
             print("    python bootstrap.py --interactive" + (" --dry-run" if dry_run else ""))
+        elif not include_evaluation and refinement_done:
+            print("  - Run evaluation agents (Shark Tank challenge):")
+            print("    python bootstrap.py --interactive --skip-learning" + (" --dry-run" if dry_run else ""))
+        elif evaluation_results:
+            print("  - Phase 3 complete! Decisions ready for solution design")
+            print(f"  - Generated {len(evaluation_results.get('decisions', []))} decisions")
         else:
-            print("  - Approved ideas ready for evaluation agents (Phase 3)")
-        print("  - Continue through agent-flow.md architecture")
+            print("  - Continue through agent-flow.md architecture")
         print("\n" + "=" * 70 + "\n")
 
         return {
@@ -208,7 +305,8 @@ async def run_bootstrap(dry_run=False, include_learning=False, interactive=False
             "usage": usage_result,
             "metrics": metrics_result,
             "current_state": current_state_result,
-            "learning": learning_result
+            "learning": learning_result,
+            "evaluation": evaluation_results
         }
 
     except KeyboardInterrupt:
@@ -238,9 +336,14 @@ if __name__ == "__main__":
         help="Skip Learning Agent (run only monitoring agents)"
     )
     parser.add_argument(
+        "--skip-evaluation",
+        action="store_true",
+        help="Skip Evaluation Agents (stop after human refinement)"
+    )
+    parser.add_argument(
         "--interactive",
         action="store_true",
-        help="Launch human refinement interface after generating ideas"
+        help="Launch human refinement and approval interfaces"
     )
     parser.add_argument(
         "--pause",
@@ -317,10 +420,11 @@ if __name__ == "__main__":
     else:
         print("\n🔧 Using Anthropic Direct API for Claude")
 
-    # Run bootstrap (include_learning is True by default unless --skip-learning is set)
+    # Run bootstrap (include_learning and include_evaluation are True by default unless --skip flags are set)
     result = asyncio.run(run_bootstrap(
         dry_run=args.dry_run,
         include_learning=not args.skip_learning,
+        include_evaluation=not args.skip_evaluation,
         interactive=args.interactive,
         pause_between_steps=args.pause
     ))

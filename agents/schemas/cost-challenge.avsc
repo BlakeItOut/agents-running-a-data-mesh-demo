@@ -1,0 +1,155 @@
+{
+  "type": "record",
+  "name": "CostChallenge",
+  "namespace": "com.datamesh.agent.evaluation",
+  "doc": "Resource and cost analysis for an approved data product idea",
+  "fields": [
+    {
+      "name": "timestamp",
+      "type": "string",
+      "doc": "ISO 8601 timestamp of when this challenge was generated"
+    },
+    {
+      "name": "challenge_id",
+      "type": "string",
+      "doc": "Unique identifier for this challenge (UUID)"
+    },
+    {
+      "name": "idea_id",
+      "type": "string",
+      "doc": "Reference to the idea being evaluated"
+    },
+    {
+      "name": "idea_title",
+      "type": "string",
+      "doc": "Title of the idea being evaluated (for readability)"
+    },
+    {
+      "name": "development_cost_estimate",
+      "type": {
+        "type": "record",
+        "name": "CostEstimate",
+        "fields": [
+          {
+            "name": "low",
+            "type": "float",
+            "doc": "Low estimate in USD"
+          },
+          {
+            "name": "medium",
+            "type": "float",
+            "doc": "Medium estimate in USD"
+          },
+          {
+            "name": "high",
+            "type": "float",
+            "doc": "High estimate in USD"
+          }
+        ]
+      },
+      "doc": "Development cost range estimates"
+    },
+    {
+      "name": "monthly_operational_cost",
+      "type": "float",
+      "doc": "Estimated monthly operational cost in USD (infrastructure, maintenance)"
+    },
+    {
+      "name": "resource_requirements",
+      "type": {
+        "type": "array",
+        "items": {
+          "type": "record",
+          "name": "Resource",
+          "fields": [
+            {
+              "name": "type",
+              "type": "string",
+              "doc": "Type of resource (e.g., 'Developer', 'Data Engineer', 'DevOps')"
+            },
+            {
+              "name": "count",
+              "type": "float",
+              "doc": "Number of resources or FTE allocation"
+            },
+            {
+              "name": "duration_weeks",
+              "type": "float",
+              "doc": "Duration needed"
+            }
+          ]
+        }
+      },
+      "default": [],
+      "doc": "Human resource requirements"
+    },
+    {
+      "name": "infrastructure_costs",
+      "type": {
+        "type": "array",
+        "items": {
+          "type": "record",
+          "name": "InfrastructureCost",
+          "fields": [
+            {
+              "name": "component",
+              "type": "string",
+              "doc": "Infrastructure component (e.g., 'Kafka topics', 'ksqlDB app', 'Flink connector')"
+            },
+            {
+              "name": "monthly_cost",
+              "type": "float",
+              "doc": "Monthly cost in USD"
+            },
+            {
+              "name": "notes",
+              "type": "string",
+              "default": "",
+              "doc": "Additional details"
+            }
+          ]
+        }
+      },
+      "default": [],
+      "doc": "Infrastructure cost breakdown"
+    },
+    {
+      "name": "cost_risk",
+      "type": {
+        "type": "enum",
+        "name": "CostRisk",
+        "symbols": ["MINIMAL", "LOW", "MODERATE", "HIGH", "CRITICAL"]
+      },
+      "doc": "Risk of costs exceeding estimates"
+    },
+    {
+      "name": "roi_potential",
+      "type": {
+        "type": "enum",
+        "name": "ROIPotential",
+        "symbols": ["MINIMAL", "LOW", "MODERATE", "HIGH", "VERY_HIGH"]
+      },
+      "doc": "Potential return on investment"
+    },
+    {
+      "name": "cost_optimization_opportunities",
+      "type": {
+        "type": "array",
+        "items": "string"
+      },
+      "default": [],
+      "doc": "Ways to reduce costs without sacrificing value"
+    },
+    {
+      "name": "confidence_score",
+      "type": "float",
+      "default": 0.7,
+      "doc": "Agent's confidence in this cost assessment (0.0 to 1.0)"
+    },
+    {
+      "name": "reasoning",
+      "type": "string",
+      "doc": "Detailed reasoning for the cost assessment"
+    }
+  ]
+}

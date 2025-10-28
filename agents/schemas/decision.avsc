@@ -1,0 +1,113 @@
+{
+  "type": "record",
+  "name": "Decision",
+  "namespace": "com.datamesh.agent.evaluation",
+  "doc": "Final decision recommendation synthesizing all evaluation challenges",
+  "fields": [
+    {
+      "name": "timestamp",
+      "type": "string",
+      "doc": "ISO 8601 timestamp of when this decision was generated"
+    },
+    {
+      "name": "decision_id",
+      "type": "string",
+      "doc": "Unique identifier for this decision (UUID)"
+    },
+    {
+      "name": "idea_id",
+      "type": "string",
+      "doc": "Reference to the idea being evaluated"
+    },
+    {
+      "name": "idea_title",
+      "type": "string",
+      "doc": "Title of the idea being evaluated (for readability)"
+    },
+    {
+      "name": "scope_challenge_id",
+      "type": "string",
+      "doc": "Reference to the scope challenge"
+    },
+    {
+      "name": "time_challenge_id",
+      "type": "string",
+      "doc": "Reference to the time challenge"
+    },
+    {
+      "name": "cost_challenge_id",
+      "type": "string",
+      "doc": "Reference to the cost challenge"
+    },
+    {
+      "name": "recommendation",
+      "type": {
+        "type": "enum",
+        "name": "Recommendation",
+        "symbols": ["STRONGLY_APPROVE", "APPROVE", "APPROVE_WITH_CONDITIONS", "RECONSIDER", "REJECT"]
+      },
+      "doc": "Overall recommendation based on all challenges"
+    },
+    {
+      "name": "overall_risk",
+      "type": {
+        "type": "enum",
+        "name": "OverallRisk",
+        "symbols": ["MINIMAL", "LOW", "MODERATE", "HIGH", "CRITICAL"]
+      },
+      "doc": "Aggregated risk assessment"
+    },
+    {
+      "name": "key_findings",
+      "type": {
+        "type": "array",
+        "items": "string"
+      },
+      "doc": "Most important insights from the evaluation"
+    },
+    {
+      "name": "conditions",
+      "type": {
+        "type": "array",
+        "items": "string"
+      },
+      "default": [],
+      "doc": "Conditions that must be met if approved"
+    },
+    {
+      "name": "alternative_approaches",
+      "type": {
+        "type": "array",
+        "items": "string"
+      },
+      "default": [],
+      "doc": "Alternative approaches to consider"
+    },
+    {
+      "name": "summary",
+      "type": "string",
+      "doc": "Executive summary of the evaluation and decision"
+    },
+    {
+      "name": "detailed_reasoning",
+      "type": "string",
+      "doc": "Detailed reasoning synthesizing scope, time, and cost analyses"
+    },
+    {
+      "name": "confidence_score",
+      "type": "float",
+      "default": 0.7,
+      "doc": "Agent's confidence in this decision (0.0 to 1.0)"
+    },
+    {
+      "name": "status",
+      "type": {
+        "type": "enum",
+        "name": "DecisionStatus",
+        "symbols": ["PENDING_APPROVAL", "APPROVED", "REJECTED", "DEFERRED"]
+      },
+      "default": "PENDING_APPROVAL",
+      "doc": "Current status of this decision in the workflow"
+    }
+  ]
+}

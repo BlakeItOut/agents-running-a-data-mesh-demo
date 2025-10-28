@@ -123,15 +123,113 @@ resource "confluent_kafka_topic" "agent_state_raw_ideas" {
   }
 }
 
+# Evaluation Layer Topics (Phase 3 - Iron Triangle)
+
+resource "confluent_kafka_topic" "agent_state_scope_challenges" {
+  kafka_cluster {
+    id = confluent_kafka_cluster.datagen_cluster.id
+  }
+
+  rest_endpoint = confluent_kafka_cluster.datagen_cluster.rest_endpoint
+
+  topic_name    = "agent-state-scope-challenges"
+  partitions_count = 1
+
+  config = {
+    "cleanup.policy"      = "compact"
+    "compression.type"    = "snappy"
+    "retention.ms"        = "-1"
+    "min.compaction.lag.ms" = "60000"
+  }
+
+  credentials {
+    key    = confluent_api_key.cluster_admin_api_key.id
+    secret = confluent_api_key.cluster_admin_api_key.secret
+  }
+}
+
+resource "confluent_kafka_topic" "agent_state_time_challenges" {
+  kafka_cluster {
+    id = confluent_kafka_cluster.datagen_cluster.id
+  }
+
+  rest_endpoint = confluent_kafka_cluster.datagen_cluster.rest_endpoint
+
+  topic_name    = "agent-state-time-challenges"
+  partitions_count = 1
+
+  config = {
+    "cleanup.policy"      = "compact"
+    "compression.type"    = "snappy"
+    "retention.ms"        = "-1"
+    "min.compaction.lag.ms" = "60000"
+  }
+
+  credentials {
+    key    = confluent_api_key.cluster_admin_api_key.id
+    secret = confluent_api_key.cluster_admin_api_key.secret
+  }
+}
+
+resource "confluent_kafka_topic" "agent_state_cost_challenges" {
+  kafka_cluster {
+    id = confluent_kafka_cluster.datagen_cluster.id
+  }
+
+  rest_endpoint = confluent_kafka_cluster.datagen_cluster.rest_endpoint
+
+  topic_name    = "agent-state-cost-challenges"
+  partitions_count = 1
+
+  config = {
+    "cleanup.policy"      = "compact"
+    "compression.type"    = "snappy"
+    "retention.ms"        = "-1"
+    "min.compaction.lag.ms" = "60000"
+  }
+
+  credentials {
+    key    = confluent_api_key.cluster_admin_api_key.id
+    secret = confluent_api_key.cluster_admin_api_key.secret
+  }
+}
+
+resource "confluent_kafka_topic" "agent_state_decisions" {
+  kafka_cluster {
+    id = confluent_kafka_cluster.datagen_cluster.id
+  }
+
+  rest_endpoint = confluent_kafka_cluster.datagen_cluster.rest_endpoint
+
+  topic_name    = "agent-state-decisions"
+  partitions_count = 1
+
+  config = {
+    "cleanup.policy"      = "compact"
+    "compression.type"    = "snappy"
+    "retention.ms"        = "-1"
+    "min.compaction.lag.ms" = "60000"
+  }
+
+  credentials {
+    key    = confluent_api_key.cluster_admin_api_key.id
+    secret = confluent_api_key.cluster_admin_api_key.secret
+  }
+}
+
 # Outputs for agent configuration
 
 output "agent_topic_names" {
   description = "Names of all agent state topics"
   value = {
-    deployment = confluent_kafka_topic.agent_state_deployment.topic_name
-    usage      = confluent_kafka_topic.agent_state_usage.topic_name
-    metrics    = confluent_kafka_topic.agent_state_metrics.topic_name
-    current    = confluent_kafka_topic.agent_state_current.topic_name
-    raw_ideas  = confluent_kafka_topic.agent_state_raw_ideas.topic_name
+    deployment        = confluent_kafka_topic.agent_state_deployment.topic_name
+    usage             = confluent_kafka_topic.agent_state_usage.topic_name
+    metrics           = confluent_kafka_topic.agent_state_metrics.topic_name
+    current           = confluent_kafka_topic.agent_state_current.topic_name
+    raw_ideas         = confluent_kafka_topic.agent_state_raw_ideas.topic_name
+    scope_challenges  = confluent_kafka_topic.agent_state_scope_challenges.topic_name
+    time_challenges   = confluent_kafka_topic.agent_state_time_challenges.topic_name
+    cost_challenges   = confluent_kafka_topic.agent_state_cost_challenges.topic_name
+    decisions         = confluent_kafka_topic.agent_state_decisions.topic_name
   }
 }

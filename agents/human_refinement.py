@@ -23,6 +23,14 @@ from common.kafka_utils import (
     produce_message
 )
 from common.schema_utils import get_schema_string
+from common.interactive_utils import (
+    ask_choice,
+    ask_text,
+    ask_yes_no,
+    print_success,
+    print_error,
+    print_warning
+)
 
 
 def load_ideas_from_files():
@@ -118,20 +126,14 @@ def display_idea(idea: Dict[str, Any], index: int):
 
 def prompt_user_action(idea: Dict[str, Any]):
     """Prompt user for action on an idea."""
-    print(f"\n{'─' * 80}")
-    print("Actions:")
-    print("  [a] Approve - Move to evaluation")
-    print("  [r] Reject - Mark as rejected")
-    print("  [e] Edit - Modify idea details")
-    print("  [s] Skip - Review later")
-    print("  [q] Quit - Exit refinement")
-    print(f"{'─' * 80}")
-
-    while True:
-        action = input("\nYour choice: ").strip().lower()
-        if action in ['a', 'r', 'e', 's', 'q']:
-            return action
-        print("Invalid choice. Please enter a, r, e, s, or q.")
+    choices = {
+        'a': 'Approve - Move to evaluation',
+        'r': 'Reject - Mark as rejected',
+        'e': 'Edit - Modify idea details',
+        's': 'Skip - Review later',
+        'q': 'Quit - Exit refinement'
+    }
+    return ask_choice("What would you like to do with this idea?", choices)
 
 
 def edit_idea(idea: Dict[str, Any]) -> Dict[str, Any]:
@@ -139,44 +141,51 @@ def edit_idea(idea: Dict[str, Any]) -> Dict[str, Any]:
     print("\n✏️  Edit Idea (press Enter to keep current value)")
 
     # Title
-    new_title = input(f"\nTitle [{idea['title']}]: ").strip()
-    if new_title:
+    new_title = ask_text("Title", default=idea['title'])
+    if new_title != idea['title']:
         idea['title'] = new_title
 
     # Description
-    new_description = input(f"\nDescription [{idea['description'][:50]}...]: ").strip()
-    if new_description:
+    desc_preview = idea['description'][:50] + "..." if len(idea['description']) > 50 else idea['description']
+    new_description = ask_text(f"Description", default=desc_preview)
+    if new_description != desc_preview:
         idea['description'] = new_description
 
     # Domain
-    new_domain = input(f"\nDomain [{idea['domain']}]: ").strip()
-    if new_domain:
+    new_domain = ask_text("Domain", default=idea['domain'])
+    if new_domain != idea['domain']:
         idea['domain'] = new_domain
 
     # Complexity
     print(f"\nComplexity [{idea['estimated_complexity']}]")
     print("  Options: LOW, MEDIUM, HIGH, VERY_HIGH")
-    new_complexity = input("  Choice: ").strip().upper()
-    if new_complexity in ['LOW', 'MEDIUM', 'HIGH', 'VERY_HIGH']:
+    new_complexity = ask_text("Choice", default=idea['estimated_complexity']).upper()
+    if new_complexity in ['LOW', 'MEDIUM', 'HIGH', 'VERY_HIGH'] and new_complexity != idea['estimated_complexity']:
         idea['estimated_complexity'] = new_complexity
 
     # Topics (comma-separated)
+    topics_preview = ', '.join(idea['related_topics'][:3])
+    if len(idea['related_topics']) > 3:
+        topics_preview += "..."
     print(f"\nRelated Topics (current: {len(idea['related_topics'])})")
-    print(f"  {', '.join(idea['related_topics'][:3])}...")
-    new_topics = input("  Add/replace (comma-separated): ").strip()
+    print(f"  {topics_preview}")
+    new_topics = ask_text("Add/replace (comma-separated)", default="", allow_empty=True)
     if new_topics:
         idea['related_topics'] = [t.strip() for t in new_topics.split(',')]
 
-    print("\n✅ Idea updated!")
+    print_success("Idea updated!")
     return idea
 
 
-def refine_ideas(ideas: List[Dict[str, Any]], dry_run=False):
+def refine_ideas(ideas: List[Dict[str, Any]], dry_run=False, stop_after_first=False):
     """Main refinement loop."""
     print(f"\n{'=' * 80}")
     print("HUMAN REFINEMENT INTERFACE")
     print(f"{'=' * 80}")
     print(f"\n📊 {len(ideas)} ideas to review")
+
+    if stop_after_first:
+        print("🎯 Demo mode: Will continue after first approval\n")
 
     if not ideas:
         print("\n⚠️  No ideas to review!")
@@ -198,16 +207,16 @@ def refine_ideas(ideas: List[Dict[str, Any]], dry_run=False):
             # Approve
             idea['status'] = 'APPROVED'
             approved.append(idea)
-            print("\n✅ Idea APPROVED - will proceed to evaluation")
+            print_success("Idea APPROVED - will proceed to evaluation")
 
         elif action == 'r':
             # Reject
             idea['status'] = 'REJECTED'
             rejected.append(idea)
-            reason = input("\nRejection reason (optional): ").strip()
+            reason = ask_text("Rejection reason (optional)", default="", allow_empty=True)
             if reason:
                 idea['rejection_reason'] = reason
-            print("\n❌ Idea REJECTED")
+            print_error("Idea REJECTED")
 
         elif action == 'e':
             # Edit
@@ -216,11 +225,10 @@ def refine_ideas(ideas: List[Dict[str, Any]], dry_run=False):
             modified.append(idea)
 
             # Ask if they want to approve after editing
-            approve_now = input("\nApprove this idea now? [y/N]: ").strip().lower()
-            if approve_now == 'y':
+            if ask_yes_no("Approve this idea now?", default=False):
                 idea['status'] = 'APPROVED'
                 approved.append(idea)
-                print("\n✅ Idea APPROVED after refinement")
+                print_success("Idea APPROVED after refinement")
             else:
                 print("\n📝 Idea REFINED - marked for later review")
 
@@ -237,6 +245,15 @@ def refine_ideas(ideas: List[Dict[str, Any]], dry_run=False):
         # Save changes back to Kafka or file
         if action in ['a', 'r', 'e'] and idea['status'] != 'RAW':
             save_idea(idea, dry_run=dry_run)
+
+        # Stop after first approval in demo mode (works for both direct approve and edit+approve)
+        if stop_after_first and idea['status'] == 'APPROVED':
+            print("\n" + "=" * 80)
+            print(" " * 20 + "FIRST IDEA APPROVED - CONTINUING!")
+            print("=" * 80)
+            print(f"\n✅ Approved: {idea.get('title')}")
+            print("🚀 Moving to evaluation agents...\n")
+            return
 
     # Summary
     print(f"\n{'=' * 80}")
@@ -285,7 +302,7 @@ def save_idea(idea: Dict[str, Any], dry_run=False):
             print(f"   ❌ Failed to update: {e}")
 
 
-def run_human_refinement(dry_run=False):
+def run_human_refinement(dry_run=False, stop_after_first=False):
     """Main entry point for human refinement."""
     ideas = consume_all_raw_ideas(dry_run=dry_run)
 
@@ -294,7 +311,7 @@ def run_human_refinement(dry_run=False):
         print("   Run the Learning Agent first to generate ideas.")
         return
 
-    refine_ideas(ideas, dry_run=dry_run)
+    refine_ideas(ideas, dry_run=dry_run, stop_after_first=stop_after_first)
 
 
 if __name__ == "__main__":
@@ -306,6 +323,11 @@ if __name__ == "__main__":
         action="store_true",
         help="Dry run mode: read from files instead of Kafka"
     )
+    parser.add_argument(
+        "--stop-after-first",
+        action="store_true",
+        help="Stop after approving the first idea (demo mode)"
+    )
     args = parser.parse_args()
 
-    run_human_refinement(dry_run=args.dry_run)
+    run_human_refinement(dry_run=args.dry_run, stop_after_first=args.stop_after_first)
