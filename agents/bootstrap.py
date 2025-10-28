@@ -33,9 +33,11 @@ from monitoring.deployment import run_deployment_agent
 from monitoring.usage import run_usage_agent
 from monitoring.metrics import run_metrics_agent
 from ideation.current_state import run_current_state
+from ideation.learning import run_learning_agent
+from human_refinement import run_human_refinement
 
 
-def print_header(dry_run=False):
+def print_header(dry_run=False, include_learning=False):
     """Print bootstrap header"""
     print("\n" + "=" * 70)
     mode = " (DRY RUN MODE)" if dry_run else ""
@@ -51,6 +53,8 @@ def print_header(dry_run=False):
     print("  2. Run Usage Agent (generates synthetic usage data)")
     print("  3. Run Metrics Agent (generates synthetic metrics data)")
     print("  4. Run Current State (synthesizes with Claude)")
+    if include_learning:
+        print("  5. Run Learning Agent (generates data product ideas)")
     print("\n" + "=" * 70 + "\n")
 
 
@@ -61,9 +65,18 @@ def print_step(step_num: int, step_name: str):
     print("-" * 70 + "\n")
 
 
-async def run_bootstrap(dry_run=False):
+def pause_for_user(step_name):
+    """Pause and wait for user to continue"""
+    print(f"\n{'─' * 70}")
+    print(f"✅ {step_name} complete!")
+    print("Press Enter to continue to next step...")
+    print('─' * 70)
+    input()
+
+
+async def run_bootstrap(dry_run=False, include_learning=False, interactive=False, pause_between_steps=False):
     """Main bootstrap orchestration"""
-    print_header(dry_run=dry_run)
+    print_header(dry_run=dry_run, include_learning=include_learning)
 
     try:
         # Step 1: Deployment Agent (async, uses MCP)
@@ -71,6 +84,9 @@ async def run_bootstrap(dry_run=False):
         start_time = time.time()
         deployment_result = await run_deployment_agent(dry_run=dry_run)
         print(f"\n⏱️  Deployment Agent completed in {time.time() - start_time:.2f}s")
+
+        if pause_between_steps:
+            pause_for_user("Deployment Agent")
 
         # Brief pause to ensure Kafka commits (or file writes in dry-run)
         if not dry_run:
@@ -85,6 +101,9 @@ async def run_bootstrap(dry_run=False):
         usage_result = run_usage_agent(dry_run=dry_run)
         print(f"\n⏱️  Usage Agent completed in {time.time() - start_time:.2f}s")
 
+        if pause_between_steps:
+            pause_for_user("Usage Agent")
+
         time.sleep(0.5 if dry_run else 2)
 
         # Step 3: Metrics Agent (sync)
@@ -93,6 +112,9 @@ async def run_bootstrap(dry_run=False):
         metrics_result = run_metrics_agent(dry_run=dry_run)
         print(f"\n⏱️  Metrics Agent completed in {time.time() - start_time:.2f}s")
 
+        if pause_between_steps:
+            pause_for_user("Metrics Agent")
+
         time.sleep(0.5 if dry_run else 2)
 
         # Step 4: Current State (sync, uses Claude)
@@ -100,6 +122,21 @@ async def run_bootstrap(dry_run=False):
         start_time = time.time()
         current_state_result = run_current_state(dry_run=dry_run)
         print(f"\n⏱️  Current State completed in {time.time() - start_time:.2f}s")
+
+        if pause_between_steps:
+            pause_for_user("Current State Agent")
+
+        # Step 5 (Optional): Learning Agent
+        learning_result = None
+        if include_learning:
+            time.sleep(0.5 if dry_run else 2)
+            print_step(5, "Learning Agent")
+            start_time = time.time()
+            learning_result = run_learning_agent(dry_run=dry_run)
+            print(f"\n⏱️  Learning Agent completed in {time.time() - start_time:.2f}s")
+
+            if pause_between_steps:
+                pause_for_user("Learning Agent")
 
         # Final Summary
         print("\n" + "=" * 70)
@@ -127,8 +164,42 @@ async def run_bootstrap(dry_run=False):
             print("\n✅ All agent state topics are now populated!")
             print("✅ Current state is available in: agent-state-current topic")
 
+        if learning_result:
+            print(f"\n💡 Ideas Generated: {len(learning_result)}")
+            if learning_result:
+                print("\n📋 Generated Data Product Ideas:")
+                for i, idea in enumerate(learning_result[:3], 1):
+                    print(f"  {i}. {idea['title']} ({idea['domain']})")
+                if len(learning_result) > 3:
+                    print(f"  ... and {len(learning_result) - 3} more")
+
+        # Step 6 (Optional): Human Refinement
+        if interactive and learning_result:
+            print("\n" + "=" * 70)
+            print("LAUNCHING HUMAN REFINEMENT INTERFACE")
+            print("=" * 70)
+            print("\nReview and approve/reject the generated ideas...")
+            if not pause_between_steps:
+                print("Press Enter to continue...")
+                input()
+
+            run_human_refinement(dry_run=dry_run)
+
+            print("\n" + "=" * 70)
+            print("HUMAN REFINEMENT COMPLETE")
+            print("=" * 70)
+
         print("\n📍 Next Steps:")
-        print("  - Run Learning Agent to generate ideas")
+        if not include_learning:
+            print("  - Run with Learning Agent to generate ideas:")
+            print("    python bootstrap.py" + (" --dry-run" if dry_run else ""))
+        elif not interactive and learning_result:
+            print("  - Review ideas with human refinement:")
+            print("    python human_refinement.py" + (" --dry-run" if dry_run else ""))
+            print("  OR run interactively next time:")
+            print("    python bootstrap.py --interactive" + (" --dry-run" if dry_run else ""))
+        else:
+            print("  - Approved ideas ready for evaluation agents (Phase 3)")
         print("  - Continue through agent-flow.md architecture")
         print("\n" + "=" * 70 + "\n")
 
@@ -136,7 +207,8 @@ async def run_bootstrap(dry_run=False):
             "deployment": deployment_result,
             "usage": usage_result,
             "metrics": metrics_result,
-            "current_state": current_state_result
+            "current_state": current_state_result,
+            "learning": learning_result
         }
 
     except KeyboardInterrupt:
@@ -159,6 +231,21 @@ if __name__ == "__main__":
         "--dry-run",
         action="store_true",
         help="Dry run mode: save outputs to files instead of Kafka (skips env var checks)"
+    )
+    parser.add_argument(
+        "--skip-learning",
+        action="store_true",
+        help="Skip Learning Agent (run only monitoring agents)"
+    )
+    parser.add_argument(
+        "--interactive",
+        action="store_true",
+        help="Launch human refinement interface after generating ideas"
+    )
+    parser.add_argument(
+        "--pause",
+        action="store_true",
+        help="Pause after each step (great for demos)"
     )
     args = parser.parse_args()
 
@@ -230,5 +317,10 @@ if __name__ == "__main__":
     else:
         print("\n🔧 Using Anthropic Direct API for Claude")
 
-    # Run bootstrap
-    result = asyncio.run(run_bootstrap(dry_run=args.dry_run))
+    # Run bootstrap (include_learning is True by default unless --skip-learning is set)
+    result = asyncio.run(run_bootstrap(
+        dry_run=args.dry_run,
+        include_learning=not args.skip_learning,
+        interactive=args.interactive,
+        pause_between_steps=args.pause
+    ))

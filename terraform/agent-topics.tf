@@ -22,8 +22,8 @@ resource "confluent_kafka_topic" "agent_state_deployment" {
   }
 
   credentials {
-    key    = confluent_api_key.cluster_admin_key.id
-    secret = confluent_api_key.cluster_admin_key.secret
+    key    = confluent_api_key.cluster_admin_api_key.id
+    secret = confluent_api_key.cluster_admin_api_key.secret
   }
 }
 
@@ -45,8 +45,8 @@ resource "confluent_kafka_topic" "agent_state_usage" {
   }
 
   credentials {
-    key    = confluent_api_key.cluster_admin_key.id
-    secret = confluent_api_key.cluster_admin_key.secret
+    key    = confluent_api_key.cluster_admin_api_key.id
+    secret = confluent_api_key.cluster_admin_api_key.secret
   }
 }
 
@@ -68,8 +68,8 @@ resource "confluent_kafka_topic" "agent_state_metrics" {
   }
 
   credentials {
-    key    = confluent_api_key.cluster_admin_key.id
-    secret = confluent_api_key.cluster_admin_key.secret
+    key    = confluent_api_key.cluster_admin_api_key.id
+    secret = confluent_api_key.cluster_admin_api_key.secret
   }
 }
 
@@ -93,8 +93,33 @@ resource "confluent_kafka_topic" "agent_state_current" {
   }
 
   credentials {
-    key    = confluent_api_key.cluster_admin_key.id
-    secret = confluent_api_key.cluster_admin_key.secret
+    key    = confluent_api_key.cluster_admin_api_key.id
+    secret = confluent_api_key.cluster_admin_api_key.secret
+  }
+}
+
+# Raw Ideas Topic (Output from Learning Agent)
+
+resource "confluent_kafka_topic" "agent_state_raw_ideas" {
+  kafka_cluster {
+    id = confluent_kafka_cluster.datagen_cluster.id
+  }
+
+  rest_endpoint = confluent_kafka_cluster.datagen_cluster.rest_endpoint
+
+  topic_name    = "agent-state-raw-ideas"
+  partitions_count = 1
+
+  config = {
+    "cleanup.policy"      = "compact"
+    "compression.type"    = "snappy"
+    "retention.ms"        = "-1"
+    "min.compaction.lag.ms" = "60000"
+  }
+
+  credentials {
+    key    = confluent_api_key.cluster_admin_api_key.id
+    secret = confluent_api_key.cluster_admin_api_key.secret
   }
 }
 
@@ -107,5 +132,6 @@ output "agent_topic_names" {
     usage      = confluent_kafka_topic.agent_state_usage.topic_name
     metrics    = confluent_kafka_topic.agent_state_metrics.topic_name
     current    = confluent_kafka_topic.agent_state_current.topic_name
+    raw_ideas  = confluent_kafka_topic.agent_state_raw_ideas.topic_name
   }
 }
