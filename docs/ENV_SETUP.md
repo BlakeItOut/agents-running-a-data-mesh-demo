@@ -6,8 +6,8 @@ This guide explains the environment configuration setup for the agents-running-a
 
 The project uses a **two-tier .env configuration structure**:
 
-1. **Root `.env`** - For Terraform infrastructure provisioning (organization-level credentials)
-2. **`agents/.env`** - For agent runtime (cluster-specific credentials from Terraform outputs)
+1. **Root `.env`** - For Terraform infrastructure provisioning (organization-level credentials only)
+2. **`agents/.env`** - For bootstrap.py and agent runtime (cluster-specific credentials + Anthropic API key)
 
 ## Configuration Files
 
@@ -17,16 +17,11 @@ The project uses a **two-tier .env configuration structure**:
 Template file showing required variables for Terraform operations.
 
 #### `.env` (gitignored)
-User-created file containing actual credentials for infrastructure provisioning.
+User-created file containing actual Confluent Cloud credentials for infrastructure provisioning.
 
-**Variables:**
-- `CONFLUENT_CLOUD_API_KEY` - Cloud API Key from Confluent Cloud Console
-- `CONFLUENT_CLOUD_API_SECRET` - Cloud API Secret
-- `ANTHROPIC_API_KEY` - Claude API key for agent operations
-- `CLAUDE_BACKEND` - Backend choice: `anthropic` or `bedrock`
-- `AWS_REGION` - AWS region (if using Bedrock)
-- `AWS_ACCESS_KEY_ID` - AWS credentials (if using Bedrock)
-- `AWS_SECRET_ACCESS_KEY` - AWS credentials (if using Bedrock)
+**Variables (only 2):**
+- `CONFLUENT_CLOUD_API_KEY` - Organization-level Cloud API Key from Confluent Cloud Console
+- `CONFLUENT_CLOUD_API_SECRET` - Organization-level Cloud API Secret
 
 **Format:** Shell export statements (`export KEY=value`)
 
@@ -42,7 +37,7 @@ cd terraform && terraform apply
 Template file showing required variables for agent runtime.
 
 #### `agents/.env` (gitignored)
-User-created file containing cluster-specific credentials from Terraform outputs.
+User-created file containing cluster-specific credentials from Terraform outputs plus Anthropic API key.
 
 **Variables:**
 - `KAFKA_BOOTSTRAP_ENDPOINT` - Kafka cluster bootstrap endpoint
@@ -51,15 +46,15 @@ User-created file containing cluster-specific credentials from Terraform outputs
 - `SCHEMA_REGISTRY_URL` - Schema Registry REST endpoint
 - `SCHEMA_REGISTRY_API_KEY` - Schema Registry API key
 - `SCHEMA_REGISTRY_API_SECRET` - Schema Registry API secret
-- `CONFLUENT_CLOUD_API_KEY` - Org-level Cloud API key (for metrics/monitoring)
+- `CONFLUENT_CLOUD_API_KEY` - Org-level Cloud API key (for MCP/metrics via deployment agent)
 - `CONFLUENT_CLOUD_API_SECRET` - Org-level Cloud API secret
-- `ANTHROPIC_API_KEY` - Claude API key
+- `ANTHROPIC_API_KEY` - Claude API key (get from https://console.anthropic.com/)
 - `KAFKA_CLUSTER_ID` (optional) - Cluster ID for API operations
 - `KAFKA_ENVIRONMENT_ID` (optional) - Environment ID for API operations
 
 **Format:** Standard KEY=value pairs (no export)
 
-**Usage:** All agents (discovery, monitoring, etc.) read from this file
+**Usage:** bootstrap.py and all monitoring/ideation agents read from this file
 
 ## Setup Workflow
 
@@ -108,14 +103,14 @@ nano agents/.env
 - `schema_registry_api_key` → `SCHEMA_REGISTRY_API_KEY`
 - `schema_registry_api_secret` → `SCHEMA_REGISTRY_API_SECRET`
 
-### Step 4: Run Agents
+### Step 4: Run Bootstrap
 
 ```bash
-cd agents/discovery
-python discovery_agent.py
+cd agents
+python bootstrap.py
 ```
 
-Agents automatically load credentials from `agents/.env`.
+bootstrap.py automatically loads credentials from `agents/.env` and runs all monitoring agents in sequence.
 
 ## Credential Types
 
@@ -183,10 +178,10 @@ git check-ignore .env agents/.env
 3. Check credential type (Cloud API vs Cluster API) matches usage
 
 ### Issue: Agents can't find .env file
-**Cause:** Agent looking in wrong directory
+**Cause:** .env file missing or in wrong location
 
 **Solution:**
-All agents should use `agents/.env`, not subdirectory-specific .env files. The discovery agent inherits from parent `agents/.env`.
+bootstrap.py and all agents expect `agents/.env` in the agents directory. Make sure you've created it from `agents/.env.example` and populated it with Terraform outputs.
 
 ### Issue: Terraform can't find credentials
 **Cause:** Root `.env` not loaded into shell
@@ -222,8 +217,9 @@ git commit -m "fix: remove .env files from git tracking"
 └── agents/
     ├── .env                      # Agent runtime credentials (gitignored)
     ├── .env.example              # Agent template (committed)
-    └── discovery/
-        └── (inherits from parent agents/.env)
+    ├── bootstrap.py              # Main entry point for agents
+    ├── monitoring/               # Deployment, Usage, Metrics agents
+    └── ideation/                 # Current State Prompt agent
 ```
 
 ## FAQ
@@ -237,16 +233,16 @@ A: Different tools have different requirements:
 
 **Q: Can I use one .env file for everything?**
 
-A: Not recommended. The root `.env` has org-level permissions that shouldn't be needed by agents. Keep cluster credentials separate for security.
+A: Not recommended. The root `.env` only has Confluent Cloud credentials for Terraform. The agents need additional credentials (Kafka cluster, Schema Registry, Anthropic API) that Terraform doesn't use.
 
 **Q: Do I need to recreate agents/.env after every terraform apply?**
 
 A: Only if you destroy and recreate the cluster. For updates to existing infrastructure, credentials remain the same.
 
-**Q: Can agents share the same .env file?**
+**Q: Where does bootstrap.py run from?**
 
-A: Yes! All agents read from `agents/.env`. Don't create subdirectory-specific .env files.
+A: Run it from the `agents/` directory: `cd agents && python bootstrap.py`. It will automatically load `agents/.env`.
 
-**Q: What if I'm using Bedrock instead of Anthropic API?**
+**Q: What's the difference between Cloud API Keys and Cluster API Keys?**
 
-A: Set `CLAUDE_BACKEND=bedrock` in root `.env` and provide AWS credentials. Copy `ANTHROPIC_API_KEY` to `agents/.env` anyway (some agents may need it).
+A: Cloud API Keys are org-level (used by Terraform). Cluster API Keys are cluster-specific (used by agents to read/write Kafka data).
