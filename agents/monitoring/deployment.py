@@ -98,22 +98,30 @@ async def discover_schemas(session):
 
 
 async def discover_connectors(session):
-    """Discover all connectors"""
+    """Discover all connectors (optional - requires Cloud API keys)"""
+    from mcp.shared.exceptions import McpError
+
     print("  Discovering connectors...")
-    connectors_response = await run_mcp_command(session, "list-connectors")
+    try:
+        connectors_response = await run_mcp_command(session, "list-connectors")
 
-    connector_details = []
-    if isinstance(connectors_response, str):
-        if "Active Connectors:" in connectors_response:
-            connectors_str = connectors_response.split("Active Connectors:")[1].strip().strip('"')
-            connector_names = [c.strip() for c in connectors_str.split(",") if c.strip()]
-            connector_details = [
-                {"name": name, "type": "source", "status": "RUNNING"}
-                for name in connector_names
-            ]
+        connector_details = []
+        if isinstance(connectors_response, str):
+            if "Active Connectors:" in connectors_response:
+                connectors_str = connectors_response.split("Active Connectors:")[1].strip().strip('"')
+                connector_names = [c.strip() for c in connectors_str.split(",") if c.strip()]
+                connector_details = [
+                    {"name": name, "type": "source", "status": "RUNNING"}
+                    for name in connector_names
+                ]
 
-    print(f"  Found {len(connector_details)} connectors")
-    return connector_details
+        print(f"  Found {len(connector_details)} connectors")
+        return connector_details
+    except McpError as e:
+        if "not found" in str(e):
+            print(f"  ⚠️  Skipping connectors (requires CONFLUENT_CLOUD_API_KEY)")
+            return []
+        raise
 
 
 def analyze_domains(schemas):

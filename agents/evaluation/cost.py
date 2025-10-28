@@ -31,6 +31,51 @@ from common.schema_utils import get_schema_string
 from common.claude_utils import call_claude
 
 
+def load_approved_ideas_from_kafka(limit_one=False):
+    """Load approved ideas from Kafka topic."""
+    print("\n1. Loading approved ideas from Kafka...")
+
+    schema_str = get_schema_string("raw-ideas")
+    consumer, deserializer = create_avro_consumer(
+        schema_str,
+        group_id=f"cost-agent-{datetime.now().timestamp()}"  # Unique group to read all messages
+    )
+
+    consumer.subscribe(["agent-state-raw-ideas"])
+
+    ideas = []
+    try:
+        timeout_ms = 5000
+        while True:
+            msg = consumer.poll(timeout=timeout_ms / 1000.0)
+
+            if msg is None:
+                break
+
+            if msg.error():
+                continue
+
+            value = deserializer(msg.value(), None)
+            if value and value.get("status") == "APPROVED":
+                ideas.append(value)
+
+    finally:
+        consumer.close()
+
+    # Sort by timestamp (most recent first) if ideas have timestamps
+    if ideas and 'timestamp' in ideas[0]:
+        ideas.sort(key=lambda x: x.get('timestamp', ''), reverse=True)
+
+    # In demo mode, only process the most recent approved idea
+    if limit_one and ideas:
+        ideas = [ideas[0]]
+        print(f"   ✅ Loaded latest approved idea: {ideas[0].get('title')}")
+    else:
+        print(f"   ✅ Loaded {len(ideas)} approved idea{'s' if len(ideas) != 1 else ''}")
+
+    return ideas
+
+
 def load_approved_ideas_from_files(limit_one=False):
     """Load approved ideas from dry-run output files."""
     print("\n1. Loading approved ideas from dry-run output...")
@@ -252,8 +297,8 @@ def publish_cost_challenge(challenge, dry_run=False):
         producer,
         serializer,
         "agent-state-cost-challenges",
-        challenge,
-        key=challenge["idea_id"]
+        challenge["idea_id"],
+        challenge
     )
 
     if success:
@@ -271,7 +316,10 @@ def run_cost_agent(dry_run=False, limit_one=False):
     print("=" * 60)
 
     # Load approved ideas
-    ideas = load_approved_ideas_from_files(limit_one=limit_one) if dry_run else []
+    if dry_run:
+        ideas = load_approved_ideas_from_files(limit_one=limit_one)
+    else:
+        ideas = load_approved_ideas_from_kafka(limit_one=limit_one)
 
     if not ideas:
         print("\n⚠️  No approved ideas found to evaluate")

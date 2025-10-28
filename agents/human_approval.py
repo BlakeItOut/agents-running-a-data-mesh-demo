@@ -25,7 +25,7 @@ from datetime import datetime, UTC
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent))
 
-from common.kafka_utils import create_avro_producer, produce_message
+from common.kafka_utils import create_avro_consumer, create_avro_producer, produce_message
 from common.schema_utils import get_schema_string
 from common.interactive_utils import (
     ask_choice,
@@ -158,8 +158,8 @@ def publish_decision(decision, dry_run=False):
         producer,
         serializer,
         "agent-state-decisions",
-        decision,
-        key=decision["idea_id"]
+        decision["idea_id"],
+        decision
     )
 
     if success:
@@ -170,14 +170,52 @@ def publish_decision(decision, dry_run=False):
     return success
 
 
+def load_decisions_from_kafka():
+    """Load decisions from Kafka topic."""
+    print("\n📥 Consuming decisions from Kafka...")
+
+    schema_str = get_schema_string("decision")
+    consumer, deserializer = create_avro_consumer(
+        schema_str,
+        group_id=f"human-approval-{datetime.now().timestamp()}"
+    )
+
+    consumer.subscribe(["agent-state-decisions"])
+
+    decisions = []
+    try:
+        timeout_ms = 5000
+        while True:
+            msg = consumer.poll(timeout=timeout_ms / 1000.0)
+
+            if msg is None:
+                break
+
+            if msg.error():
+                continue
+
+            value = deserializer(msg.value(), None)
+            # Only load decisions that are PENDING_APPROVAL
+            if value and value.get("status") == "PENDING_APPROVAL":
+                decisions.append(value)
+
+    finally:
+        consumer.close()
+
+    # Sort by timestamp (most recent first)
+    if decisions and 'timestamp' in decisions[0]:
+        decisions.sort(key=lambda x: x.get('timestamp', ''), reverse=True)
+
+    print(f"   ✅ Consumed {len(decisions)} decisions")
+    return decisions
+
+
 def load_decisions(dry_run=False):
     """Load decisions that need approval."""
     if dry_run:
         return load_decisions_from_files()
-
-    # Kafka consumer logic (for future full mode)
-    # For now, fall back to files
-    return load_decisions_from_files()
+    else:
+        return load_decisions_from_kafka()
 
 
 def load_decisions_from_files():

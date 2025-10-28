@@ -63,6 +63,104 @@ def load_challenges_from_files(idea_id):
     return challenges
 
 
+def load_challenges_from_kafka():
+    """Load all challenges from Kafka topics and group by idea_id."""
+    print("   Loading challenges from Kafka...")
+
+    challenges_by_idea = {}
+
+    # Load scope challenges
+    print("      - Loading scope challenges...")
+    schema_str = get_schema_string("scope-challenge")
+    consumer, deserializer = create_avro_consumer(
+        schema_str,
+        group_id=f"decision-agent-scope-{datetime.now().timestamp()}"
+    )
+    consumer.subscribe(["agent-state-scope-challenges"])
+
+    try:
+        timeout_ms = 5000
+        while True:
+            msg = consumer.poll(timeout=timeout_ms / 1000.0)
+            if msg is None:
+                break
+            if msg.error():
+                continue
+
+            value = deserializer(msg.value(), None)
+            if value:
+                idea_id = value.get("idea_id")
+                if idea_id not in challenges_by_idea:
+                    challenges_by_idea[idea_id] = {}
+                challenges_by_idea[idea_id]["scope"] = value
+    finally:
+        consumer.close()
+
+    # Load time challenges
+    print("      - Loading time challenges...")
+    schema_str = get_schema_string("time-challenge")
+    consumer, deserializer = create_avro_consumer(
+        schema_str,
+        group_id=f"decision-agent-time-{datetime.now().timestamp()}"
+    )
+    consumer.subscribe(["agent-state-time-challenges"])
+
+    try:
+        timeout_ms = 5000
+        while True:
+            msg = consumer.poll(timeout=timeout_ms / 1000.0)
+            if msg is None:
+                break
+            if msg.error():
+                continue
+
+            value = deserializer(msg.value(), None)
+            if value:
+                idea_id = value.get("idea_id")
+                if idea_id not in challenges_by_idea:
+                    challenges_by_idea[idea_id] = {}
+                challenges_by_idea[idea_id]["time"] = value
+    finally:
+        consumer.close()
+
+    # Load cost challenges
+    print("      - Loading cost challenges...")
+    schema_str = get_schema_string("cost-challenge")
+    consumer, deserializer = create_avro_consumer(
+        schema_str,
+        group_id=f"decision-agent-cost-{datetime.now().timestamp()}"
+    )
+    consumer.subscribe(["agent-state-cost-challenges"])
+
+    try:
+        timeout_ms = 5000
+        while True:
+            msg = consumer.poll(timeout=timeout_ms / 1000.0)
+            if msg is None:
+                break
+            if msg.error():
+                continue
+
+            value = deserializer(msg.value(), None)
+            if value:
+                idea_id = value.get("idea_id")
+                if idea_id not in challenges_by_idea:
+                    challenges_by_idea[idea_id] = {}
+                challenges_by_idea[idea_id]["cost"] = value
+    finally:
+        consumer.close()
+
+    # Filter to only ideas with all three challenges
+    complete_ideas = {
+        idea_id: challenges
+        for idea_id, challenges in challenges_by_idea.items()
+        if "scope" in challenges and "time" in challenges and "cost" in challenges
+    }
+
+    print(f"      ✅ Found {len(complete_ideas)} ideas with complete challenges")
+    return complete_ideas
+
+
 def load_all_idea_ids():
     """Get list of idea IDs that have all three challenges."""
     output_dir = Path(__file__).parent.parent / "dry-run-output"
@@ -271,8 +369,8 @@ def publish_decision(decision, dry_run=False):
         producer,
         serializer,
         "agent-state-decisions",
-        decision,
-        key=decision["idea_id"]
+        decision["idea_id"],
+        decision
     )
 
     if success:
@@ -289,41 +387,72 @@ def run_decision_agent(dry_run=False):
     print("DECISION AGENT - Shark Tank Panel Decision")
     print("=" * 60)
 
-    # Get all idea IDs with challenges
-    idea_ids = load_all_idea_ids() if dry_run else []
+    # Load challenges
+    if dry_run:
+        # Dry-run: Load from files
+        idea_ids = load_all_idea_ids()
+        if not idea_ids:
+            print("\n⚠️  No challenges found to synthesize")
+            return []
 
-    if not idea_ids:
-        print("\n⚠️  No challenges found to synthesize")
-        return []
+        print(f"\n1. Synthesizing decisions for {len(idea_ids)} ideas...")
 
-    print(f"\n1. Synthesizing decisions for {len(idea_ids)} ideas...")
+        decisions = []
+        for i, idea_id in enumerate(idea_ids, 1):
+            # Load all three challenges
+            challenges = load_challenges_from_files(idea_id)
 
-    decisions = []
-    for i, idea_id in enumerate(idea_ids, 1):
-        # Load all three challenges
-        challenges = load_challenges_from_files(idea_id)
+            if not all(challenges.values()):
+                print(f"\n   [{i}/{len(idea_ids)}] ⚠️  Missing challenges for idea {idea_id[:8]}... - skipping")
+                continue
 
-        if not all(challenges.values()):
-            print(f"\n   [{i}/{len(idea_ids)}] ⚠️  Missing challenges for idea {idea_id[:8]}... - skipping")
-            continue
+            idea_title = challenges["scope"].get("idea_title")
+            print(f"\n   [{i}/{len(idea_ids)}] Synthesizing: {idea_title}")
 
-        idea_title = challenges["scope"].get("idea_title")
-        print(f"\n   [{i}/{len(idea_ids)}] Synthesizing: {idea_title}")
+            decision = synthesize_decision(
+                idea_title,
+                challenges["scope"],
+                challenges["time"],
+                challenges["cost"]
+            )
+            decisions.append(decision)
 
-        decision = synthesize_decision(
-            idea_title,
-            challenges["scope"],
-            challenges["time"],
-            challenges["cost"]
-        )
-        decisions.append(decision)
+            print(f"      Recommendation: {decision['recommendation']}")
+            print(f"      Overall Risk: {decision['overall_risk']}")
+            print(f"      Key Findings: {len(decision['key_findings'])}")
 
-        print(f"      Recommendation: {decision['recommendation']}")
-        print(f"      Overall Risk: {decision['overall_risk']}")
-        print(f"      Key Findings: {len(decision['key_findings'])}")
+            # Publish the decision
+            publish_decision(decision, dry_run=dry_run)
+    else:
+        # Production: Load from Kafka
+        print("\n1. Loading challenges from Kafka...")
+        challenges_by_idea = load_challenges_from_kafka()
 
-        # Publish the decision
-        publish_decision(decision, dry_run=dry_run)
+        if not challenges_by_idea:
+            print("\n⚠️  No challenges found to synthesize")
+            return []
+
+        print(f"\n2. Synthesizing decisions for {len(challenges_by_idea)} ideas...")
+
+        decisions = []
+        for i, (idea_id, challenges) in enumerate(challenges_by_idea.items(), 1):
+            idea_title = challenges["scope"].get("idea_title")
+            print(f"\n   [{i}/{len(challenges_by_idea)}] Synthesizing: {idea_title}")
+
+            decision = synthesize_decision(
+                idea_title,
+                challenges["scope"],
+                challenges["time"],
+                challenges["cost"]
+            )
+            decisions.append(decision)
+
+            print(f"      Recommendation: {decision['recommendation']}")
+            print(f"      Overall Risk: {decision['overall_risk']}")
+            print(f"      Key Findings: {len(decision['key_findings'])}")
+
+            # Publish the decision
+            publish_decision(decision, dry_run=dry_run)
 
     print("\n" + "=" * 60)
     print(f"DECISION AGENT COMPLETE - Generated {len(decisions)} decisions")

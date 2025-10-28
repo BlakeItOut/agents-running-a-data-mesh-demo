@@ -90,7 +90,7 @@ def produce_message(producer: Producer,
                    topic: str,
                    key: str,
                    value: Dict[str, Any],
-                   callback: Optional[Callable] = None) -> None:
+                   callback: Optional[Callable] = None) -> bool:
     """
     Produce a message to Kafka with Avro serialization.
 
@@ -101,22 +101,30 @@ def produce_message(producer: Producer,
         key: Message key
         value: Message value (dict matching Avro schema)
         callback: Optional delivery report callback
+
+    Returns:
+        True if message was successfully produced, False otherwise
     """
-    string_serializer = StringSerializer('utf_8')
+    try:
+        string_serializer = StringSerializer('utf_8')
 
-    serialized_key = string_serializer(key)
-    serialized_value = serializer(
-        value,
-        SerializationContext(topic, MessageField.VALUE)
-    )
+        serialized_key = string_serializer(key)
+        serialized_value = serializer(
+            value,
+            SerializationContext(topic, MessageField.VALUE)
+        )
 
-    producer.produce(
-        topic=topic,
-        key=serialized_key,
-        value=serialized_value,
-        on_delivery=callback or delivery_report
-    )
-    producer.flush()
+        producer.produce(
+            topic=topic,
+            key=serialized_key,
+            value=serialized_value,
+            on_delivery=callback or delivery_report
+        )
+        producer.flush()
+        return True
+    except Exception as e:
+        print(f"❌ Failed to produce message: {e}")
+        return False
 
 
 def delivery_report(err, msg):
