@@ -20,20 +20,47 @@ Multi-agent system for transforming raw Kafka data into an organized data mesh, 
           └──────────┬───────┴────────┬─────────┘
                      ▼                ▼
             ┌──────────────────────────────┐
-            │  Current State Prompt Agent  │
+            │  Current State Agent         │
             │     (Claude Synthesis)       │
             └──────────────┬───────────────┘
                            ▼
                   agent-state-current
                            ▼
-                  [ Learning Prompt ]
+                  [ Learning Agent ]
                   [ Evaluation Agents ]
                   [ ... ]
 ```
 
 ## Quick Start
 
-### 1. Prerequisites
+### Option A: Dry-Run Mode (Fastest - No Infrastructure Needed)
+
+Perfect for testing without deploying any infrastructure:
+
+```bash
+cd agents
+
+# 1. Create and activate virtual environment
+python3 -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# 2. Install Python dependencies (includes anthropic, confluent-kafka, etc.)
+pip install -r requirements.txt
+
+# 3. Set your Anthropic API key (only requirement for dry-run)
+export ANTHROPIC_API_KEY="sk-ant-api03-your-key-here"
+
+# 4. Run the bootstrap in dry-run mode
+python bootstrap.py --dry-run
+```
+
+**What happens:** All 4 agents run and save output to `dry-run-output/` directory. Claude synthesizes the state.
+
+### Option B: Full Mode (With Kafka Infrastructure)
+
+Requires deployed Confluent Cloud infrastructure:
+
+#### 1. Prerequisites
 
 - Python 3.10+ installed
 - Node.js installed (for MCP server via npx)
@@ -41,7 +68,7 @@ Multi-agent system for transforming raw Kafka data into an organized data mesh, 
 - Confluent Cloud credentials
 - Anthropic API key
 
-### 2. Setup Environment
+#### 2. Setup Environment
 
 ```bash
 cd agents
@@ -50,7 +77,7 @@ cd agents
 python3 -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 
-# Install dependencies
+# Install dependencies (anthropic, confluent-kafka, mcp, boto3, python-dotenv)
 pip install -r requirements.txt
 
 # Copy environment template
@@ -60,7 +87,7 @@ cp .env.example .env
 nano .env
 ```
 
-### 3. Configure Environment Variables
+#### 3. Configure Environment Variables
 
 Your `.env` file needs:
 
@@ -96,7 +123,7 @@ terraform output -json | jq -r '
 '
 ```
 
-### 4. Deploy Infrastructure
+#### 4. Deploy Infrastructure
 
 Before running agents, deploy the agent topics and schemas:
 
@@ -110,7 +137,7 @@ This creates:
 - Avro schemas registered in Schema Registry
 - Proper RBAC permissions
 
-### 5. Run Bootstrap
+#### 5. Run Bootstrap
 
 ```bash
 cd agents
@@ -122,7 +149,7 @@ python bootstrap.py
 1. Runs Deployment Agent → discovers 37 topics from Confluent Cloud
 2. Runs Usage Agent → generates synthetic usage data
 3. Runs Metrics Agent → generates synthetic metrics
-4. Runs Current State Prompt → synthesizes with Claude
+4. Runs Current State → synthesizes with Claude
 5. Publishes aggregated state to `agent-state-current`
 
 **Expected output:**
@@ -143,7 +170,7 @@ STEP 2: Usage Agent
 STEP 3: Metrics Agent
   ✅ Metrics state published successfully!
 
-STEP 4: Current State Prompt Agent
+STEP 4: Current State Agent
   ✅ Current state published successfully!
 
 ==================================================================
@@ -180,7 +207,7 @@ agents/
 │   ├── usage.py               # Usage metrics (synthetic for now)
 │   └── metrics.py             # System metrics (synthetic for now)
 └── ideation/                   # Ideation layer agents
-    └── current-state-prompt.py # Synthesizes 3 states with Claude
+    └── current-state.py       # Synthesizes 3 states with Claude
 ```
 
 ## Individual Agents
@@ -197,8 +224,8 @@ python monitoring/usage.py
 # Metrics Agent (synthetic)
 python monitoring/metrics.py
 
-# Current State Prompt (requires all 3 above to have run)
-python ideation/current-state-prompt.py
+# Current State (requires all 3 above to have run)
+python ideation/current-state.py
 ```
 
 ## Verification
@@ -225,7 +252,7 @@ kafka-console-consumer \
 
 ## Next Steps
 
-After bootstrap completes, the `agent-state-current` topic contains the synthesized platform state. This becomes the input for the **Learning Prompt Agent** (not yet implemented), which will:
+After bootstrap completes, the `agent-state-current` topic contains the synthesized platform state. This becomes the input for the **Learning Agent** (not yet implemented), which will:
 
 1. Read from `agent-state-current`
 2. Generate ideas for data products
@@ -234,20 +261,58 @@ After bootstrap completes, the `agent-state-current` topic contains the synthesi
 
 ## Troubleshooting
 
+### "anthropic package not installed" Error
+
+If you see: `⚠️ Claude synthesis failed: anthropic package not installed`
+
+**Solution:**
+```bash
+# Make sure you're in the virtual environment
+source venv/bin/activate
+
+# Install all dependencies
+pip install -r requirements.txt
+
+# Or install anthropic specifically
+pip install anthropic
+```
+
+**Verify installation:**
+```bash
+python -c "import anthropic; print('anthropic installed:', anthropic.__version__)"
+```
+
+### Missing ANTHROPIC_API_KEY
+
+If Claude synthesis fails with missing API key:
+
+**Solution:**
+```bash
+# Set in your environment
+export ANTHROPIC_API_KEY="sk-ant-api03-your-key-here"
+
+# Or add to .env file
+echo "ANTHROPIC_API_KEY=sk-ant-api03-your-key-here" >> .env
+```
+
+Get your API key from: https://console.anthropic.com/settings/keys
+
 ### MCP Connection Fails
 - Ensure `npx` is available: `npx --version`
 - Check Confluent Cloud credentials in `.env`
 - Verify `.env` file path in deployment.py
+- Only required for full mode (not dry-run)
 
 ### Kafka Publishing Fails
 - Verify cluster API key has write permissions
 - Check Schema Registry credentials
 - Ensure topics exist: `terraform output agent_topic_names`
+- Try dry-run mode to test without Kafka: `python bootstrap.py --dry-run`
 
 ### Claude API Fails
 - Check `ANTHROPIC_API_KEY` is valid
-- Verify API quota/billing
-- Fallback synthesis will be used if Claude fails
+- Verify API quota/billing at https://console.anthropic.com/
+- Fallback synthesis will be used if Claude fails (basic summary)
 
 ## Cost Considerations
 

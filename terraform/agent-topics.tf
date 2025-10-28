@@ -2,7 +2,7 @@
 # These topics use log compaction to maintain only the latest state per key
 # All topics have short names for easier consumption
 
-# Pre-Current-State Topics (Input to Current State Prompt)
+# Pre-Current-State Topics (Input to Current State)
 
 resource "confluent_kafka_topic" "agent_state_deployment" {
   kafka_cluster {
@@ -73,7 +73,7 @@ resource "confluent_kafka_topic" "agent_state_metrics" {
   }
 }
 
-# Aggregated Current State Topic (Output from Current State Prompt)
+# Aggregated Current State Topic (Output from Current State)
 
 resource "confluent_kafka_topic" "agent_state_current" {
   kafka_cluster {

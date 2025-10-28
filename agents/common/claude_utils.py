@@ -220,15 +220,33 @@ def synthesize_state(
     Returns:
         Dictionary with 'summary' and 'observations' keys
     """
+    # Extract key counts to provide to Claude
+    topic_count = len(deployment_data.get("topics", []))
+    schema_count = len(deployment_data.get("schemas", []))
+    connector_count = len(deployment_data.get("connectors", []))
+    domain_count = len(deployment_data.get("domains", {}))
+    consumer_groups = usage_data.get("consumer_groups", 0)
+    active_consumers = usage_data.get("active_consumers", 0)
+
     system_prompt = """You are a data platform analyst synthesizing state information.
 Your role is to:
 1. Analyze deployment, usage, and metrics data
 2. Provide a concise 2-3 sentence summary of the current platform state
 3. Identify 2-3 notable observations or anomalies
 
+IMPORTANT: Use the KEY STATISTICS provided below for counts. Do not count items yourself as this can lead to errors. Reference these exact numbers in your summary.
+
 Focus on actionable insights and patterns."""
 
     prompt = f"""Analyze this data platform state and provide a synthesis:
+
+KEY STATISTICS (use these exact numbers - do not recount):
+- Total Topics: {topic_count}
+- Total Schemas: {schema_count}
+- Total Connectors: {connector_count}
+- Business Domains: {domain_count}
+- Consumer Groups: {consumer_groups}
+- Active Consumers: {active_consumers}
 
 DEPLOYMENT STATE:
 {format_json(deployment_data)}
@@ -283,7 +301,7 @@ def format_json(data: Dict[str, Any]) -> str:
 
 def generate_idea(current_state: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Generate a raw idea based on current state (Learning Prompt).
+    Generate a raw idea based on current state (Learning Agent).
 
     Args:
         current_state: Current platform state

@@ -1,17 +1,17 @@
 # Agent Orchestration Dependencies
 
 # Confluent Kafka Client (with Avro support)
-confluent-kafka[avro]==2.7.0
-confluent-kafka[schema-registry]==2.7.0
+# Using >=2.12.0 for Python 3.14 support with pre-built wheels
+confluent-kafka[avro,schema-registry]>=2.12.0
 
 # MCP (Model Context Protocol) for Confluent Cloud
-mcp==1.3.2
+mcp>=1.19.0
 
 # Anthropic SDK for Claude API
-anthropic==0.44.0
+anthropic>=0.71.0
 
 # AWS Bedrock Runtime for Claude (alternative to Anthropic API)
-boto3==1.35.80
+boto3>=1.35.80
 
 # Additional utilities
-python-dotenv==1.0.1
+python-dotenv>=1.0.1

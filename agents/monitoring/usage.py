@@ -42,17 +42,18 @@ def generate_synthetic_usage_state():
     ]
 
     # Top topics by consumption (messages/sec)
+    # Note: consumer_count is number of active consumers for this topic
     top_topics = [
-        {"topic": "clickstream", "messages_per_sec": 1247, "consumer_lag": 125},
-        {"topic": "transactions", "messages_per_sec": 856, "consumer_lag": 0},
-        {"topic": "fleet_mgmt_location", "messages_per_sec": 723, "consumer_lag": 45},
-        {"topic": "gaming_player_activity", "messages_per_sec": 612, "consumer_lag": 203},
-        {"topic": "orders", "messages_per_sec": 445, "consumer_lag": 12},
-        {"topic": "stock_trades", "messages_per_sec": 389, "consumer_lag": 0},
-        {"topic": "insurance_customer_activity", "messages_per_sec": 267, "consumer_lag": 88},
-        {"topic": "shoes", "messages_per_sec": 198, "consumer_lag": 0},
-        {"topic": "pageviews", "messages_per_sec": 156, "consumer_lag": 34},
-        {"topic": "users", "messages_per_sec": 89, "consumer_lag": 0}
+        {"topic_name": "clickstream", "consumer_count": 5, "messages_per_second": 1247.0},
+        {"topic_name": "transactions", "consumer_count": 4, "messages_per_second": 856.0},
+        {"topic_name": "fleet_mgmt_location", "consumer_count": 3, "messages_per_second": 723.0},
+        {"topic_name": "gaming_player_activity", "consumer_count": 3, "messages_per_second": 612.0},
+        {"topic_name": "orders", "consumer_count": 2, "messages_per_second": 445.0},
+        {"topic_name": "stock_trades", "consumer_count": 2, "messages_per_second": 389.0},
+        {"topic_name": "insurance_customer_activity", "consumer_count": 2, "messages_per_second": 267.0},
+        {"topic_name": "shoes", "consumer_count": 1, "messages_per_second": 198.0},
+        {"topic_name": "pageviews", "consumer_count": 1, "messages_per_second": 156.0},
+        {"topic_name": "users", "consumer_count": 1, "messages_per_second": 89.0}
     ]
 
     # A few topics remain idle (recently added or low priority)
