@@ -11,7 +11,8 @@ mcp>=1.19.0
 anthropic>=0.71.0
 
 # AWS Bedrock Runtime for Claude (alternative to Anthropic API)
-boto3>=1.35.80
+# Requires >=1.39.0 for AWS_BEARER_TOKEN_BEDROCK support (Bedrock API keys)
+boto3>=1.39.0
 
 # Additional utilities
 python-dotenv>=1.0.1

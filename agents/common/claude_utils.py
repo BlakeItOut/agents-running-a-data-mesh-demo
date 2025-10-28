@@ -58,6 +58,11 @@ def get_bedrock_client():
     """
     Get an AWS Bedrock Runtime client instance.
 
+    Supports multiple authentication methods:
+    1. BEDROCK_API_KEY environment variable (sets AWS_BEARER_TOKEN_BEDROCK automatically)
+    2. AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY environment variables
+    3. ~/.aws/credentials file
+
     Returns:
         Configured boto3 bedrock-runtime client
 
@@ -70,8 +75,15 @@ def get_bedrock_client():
 
     region = os.getenv('AWS_REGION', 'us-east-1')
 
-    # boto3 will automatically use AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY from env
-    # or from ~/.aws/credentials
+    # Check for Bedrock API key and set AWS_BEARER_TOKEN_BEDROCK
+    # AWS Bedrock API keys use bearer token authentication
+    bedrock_api_key = os.getenv('BEDROCK_API_KEY')
+    if bedrock_api_key:
+        os.environ['AWS_BEARER_TOKEN_BEDROCK'] = bedrock_api_key
+
+    # boto3 will automatically use AWS_BEARER_TOKEN_BEDROCK for Bedrock API key auth
+    # or AWS_ACCESS_KEY_ID/AWS_SECRET_ACCESS_KEY from env
+    # or ~/.aws/credentials
     try:
         client = boto3.client('bedrock-runtime', region_name=region)
         return client
@@ -151,23 +163,72 @@ def _call_claude_bedrock(
     """Call Claude via AWS Bedrock Runtime."""
     client = get_bedrock_client()
 
-    # Map model names to Bedrock model IDs
-    model_id_map = {
-        "claude-3-5-sonnet-20241022": "anthropic.claude-3-5-sonnet-20241022-v2:0",
-        "claude-3-5-sonnet-20240620": "anthropic.claude-3-5-sonnet-20240620-v1:0",
-        "claude-3-sonnet-20240229": "anthropic.claude-3-sonnet-20240229-v1:0",
-        "claude-3-opus-20240229": "anthropic.claude-3-opus-20240229-v1:0",
-        "claude-3-haiku-20240307": "anthropic.claude-3-haiku-20240307-v1:0",
-    }
+    # Map model names to Bedrock model IDs or inference profiles
+    # When using API keys, inference profiles are required (us.anthropic.*)
+    # When using IAM credentials, direct model IDs can be used (anthropic.*)
+
+    # Try to detect if we're using API key auth (bearer token) vs IAM
+    using_api_key = bool(os.getenv('BEDROCK_API_KEY') or os.getenv('AWS_BEARER_TOKEN_BEDROCK'))
+
+    if using_api_key:
+        # Use cross-region inference profiles for API key authentication
+        model_id_map = {
+            # Claude Sonnet 4.5 (latest)
+            "claude-sonnet-4-5-20250929": "us.anthropic.claude-sonnet-4-5-20250929-v1:0",
+            # Claude Sonnet 4
+            "claude-sonnet-4-20250514": "us.anthropic.claude-sonnet-4-20250514-v1:0",
+            # Claude 3.7 Sonnet
+            "claude-3-7-sonnet-20250219": "us.anthropic.claude-3-7-sonnet-20250219-v1:0",
+            # Claude Opus 4.1
+            "claude-opus-4-1-20250805": "us.anthropic.claude-opus-4-1-20250805-v1:0",
+            # Claude Opus 4
+            "claude-opus-4-20250514": "us.anthropic.claude-opus-4-20250514-v1:0",
+            # Claude 3.5 Sonnet
+            "claude-3-5-sonnet-20250219": "us.anthropic.claude-3-5-sonnet-20250219-v2:0",
+            "claude-3-5-sonnet-20241022": "us.anthropic.claude-3-5-sonnet-20241022-v2:0",
+            "claude-3-5-sonnet-20240620": "us.anthropic.claude-3-5-sonnet-20240620-v1:0",
+            # Claude 3.5 Haiku
+            "claude-3-5-haiku-20250110": "us.anthropic.claude-3-5-haiku-20250110-v1:0",
+            # Claude 3 models
+            "claude-3-sonnet-20240229": "us.anthropic.claude-3-sonnet-20240229-v1:0",
+            "claude-3-opus-20240229": "us.anthropic.claude-3-opus-20240229-v1:0",
+            "claude-3-haiku-20240307": "us.anthropic.claude-3-haiku-20240307-v1:0",
+        }
+        default_model = "us.anthropic.claude-sonnet-4-5-20250929-v1:0"  # Latest Sonnet
+    else:
+        # Use direct model IDs for IAM authentication
+        model_id_map = {
+            # Claude Sonnet 4.5 (latest)
+            "claude-sonnet-4-5-20250929": "anthropic.claude-sonnet-4-5-20250929-v1:0",
+            # Claude Sonnet 4
+            "claude-sonnet-4-20250514": "anthropic.claude-sonnet-4-20250514-v1:0",
+            # Claude 3.7 Sonnet
+            "claude-3-7-sonnet-20250219": "anthropic.claude-3-7-sonnet-20250219-v1:0",
+            # Claude Opus 4.1
+            "claude-opus-4-1-20250805": "anthropic.claude-opus-4-1-20250805-v1:0",
+            # Claude Opus 4
+            "claude-opus-4-20250514": "anthropic.claude-opus-4-20250514-v1:0",
+            # Claude 3.5 Sonnet
+            "claude-3-5-sonnet-20250219": "anthropic.claude-3-5-sonnet-20250219-v2:0",
+            "claude-3-5-sonnet-20241022": "anthropic.claude-3-5-sonnet-20241022-v2:0",
+            "claude-3-5-sonnet-20240620": "anthropic.claude-3-5-sonnet-20240620-v1:0",
+            # Claude 3.5 Haiku
+            "claude-3-5-haiku-20250110": "anthropic.claude-3-5-haiku-20250110-v1:0",
+            # Claude 3 models
+            "claude-3-sonnet-20240229": "anthropic.claude-3-sonnet-20240229-v1:0",
+            "claude-3-opus-20240229": "anthropic.claude-3-opus-20240229-v1:0",
+            "claude-3-haiku-20240307": "anthropic.claude-3-haiku-20240307-v1:0",
+        }
+        default_model = "anthropic.claude-sonnet-4-5-20250929-v1:0"  # Latest Sonnet
 
     # Use mapped model ID or pass through if already a Bedrock ID
     if model in model_id_map:
         bedrock_model_id = model_id_map[model]
-    elif model.startswith("anthropic."):
+    elif model.startswith("anthropic.") or model.startswith("us.anthropic."):
         bedrock_model_id = model
     else:
-        # Default to latest Sonnet if unknown
-        bedrock_model_id = "anthropic.claude-3-5-sonnet-20241022-v2:0"
+        # Default to latest Sonnet
+        bedrock_model_id = default_model
 
     # Construct request body in Anthropic Messages API format
     request_body = {

@@ -47,8 +47,14 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 # 2. Install Python dependencies (includes anthropic, confluent-kafka, etc.)
 pip install -r requirements.txt
 
-# 3. Set your Anthropic API key (only requirement for dry-run)
+# 3. Set your Claude API credentials (only requirement for dry-run)
+# Option A: Anthropic Direct API
 export ANTHROPIC_API_KEY="sk-ant-api03-your-key-here"
+
+# Option B: AWS Bedrock
+export CLAUDE_BACKEND=bedrock
+export AWS_REGION=us-east-1
+export BEDROCK_API_KEY="your-base64-encoded-key"
 
 # 4. Run the bootstrap in dry-run mode
 python bootstrap.py --dry-run
@@ -106,8 +112,15 @@ SCHEMA_REGISTRY_API_SECRET=YOUR_SR_API_SECRET
 CONFLUENT_CLOUD_API_KEY=YOUR_CLOUD_API_KEY
 CONFLUENT_CLOUD_API_SECRET=YOUR_CLOUD_API_SECRET
 
-# Claude API
+# Claude API - Choose one of two options:
+# Option A: Anthropic Direct API
+CLAUDE_BACKEND=anthropic
 ANTHROPIC_API_KEY=sk-ant-api03-xxxxx
+
+# Option B: AWS Bedrock
+CLAUDE_BACKEND=bedrock
+AWS_REGION=us-east-1
+BEDROCK_API_KEY=your-base64-encoded-key
 ```
 
 **Get credentials from Terraform:**
@@ -310,8 +323,20 @@ Get your API key from: https://console.anthropic.com/settings/keys
 - Try dry-run mode to test without Kafka: `python bootstrap.py --dry-run`
 
 ### Claude API Fails
+
+**Using Anthropic Direct API:**
 - Check `ANTHROPIC_API_KEY` is valid
 - Verify API quota/billing at https://console.anthropic.com/
+- Ensure `CLAUDE_BACKEND=anthropic` in .env
+
+**Using AWS Bedrock:**
+- Verify model access enabled: AWS Bedrock Console → Model access → Check "Anthropic Claude 3.5 Sonnet v2" is granted
+- Check `BEDROCK_API_KEY` is correctly base64 encoded
+- Verify `AWS_REGION` matches where Bedrock is enabled (us-east-1, us-west-2, etc.)
+- Test AWS credentials: `aws bedrock list-foundation-models --region us-east-1` (if using AWS CLI)
+- Ensure `CLAUDE_BACKEND=bedrock` in .env
+
+**General:**
 - Fallback synthesis will be used if Claude fails (basic summary)
 
 ## Cost Considerations
