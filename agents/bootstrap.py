@@ -21,6 +21,10 @@ import asyncio
 import time
 from pathlib import Path
 from datetime import datetime
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Import agent modules
 sys.path.insert(0, str(Path(__file__).parent))
@@ -161,9 +165,24 @@ if __name__ == "__main__":
     # Check for required environment variables (skip in dry-run mode for some vars)
     import os
 
+    # Determine Claude backend
+    claude_backend = os.getenv('CLAUDE_BACKEND', 'anthropic').lower()
+
     if args.dry_run:
-        # In dry-run, only Claude API key is required (for synthesis)
-        required_vars = ["ANTHROPIC_API_KEY"]
+        # In dry-run, only Claude API credentials are required (for synthesis)
+        if claude_backend == 'bedrock':
+            # Bedrock requires either BEDROCK_API_KEY or AWS_ACCESS_KEY_ID
+            if not os.getenv('BEDROCK_API_KEY') and not os.getenv('AWS_ACCESS_KEY_ID'):
+                print("❌ Missing required Bedrock credentials:")
+                print("  - Set BEDROCK_API_KEY (base64 encoded)")
+                print("  OR")
+                print("  - Set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY")
+                print("\nNote: Also set CLAUDE_BACKEND=bedrock and AWS_REGION=us-east-1")
+                sys.exit(1)
+            required_vars = []  # Bedrock vars already checked above
+        else:
+            # Anthropic Direct API
+            required_vars = ["ANTHROPIC_API_KEY"]
     else:
         # Normal mode requires all Kafka/Schema Registry credentials
         required_vars = [
@@ -172,9 +191,22 @@ if __name__ == "__main__":
             "KAFKA_API_SECRET",
             "SCHEMA_REGISTRY_URL",
             "SCHEMA_REGISTRY_API_KEY",
-            "SCHEMA_REGISTRY_API_SECRET",
-            "ANTHROPIC_API_KEY"
+            "SCHEMA_REGISTRY_API_SECRET"
         ]
+
+        # Add Claude backend-specific requirements
+        if claude_backend == 'bedrock':
+            # Bedrock requires either BEDROCK_API_KEY or AWS_ACCESS_KEY_ID
+            if not os.getenv('BEDROCK_API_KEY') and not os.getenv('AWS_ACCESS_KEY_ID'):
+                print("❌ Missing required Bedrock credentials:")
+                print("  - Set BEDROCK_API_KEY (base64 encoded)")
+                print("  OR")
+                print("  - Set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY")
+                print("\nNote: Also set CLAUDE_BACKEND=bedrock and AWS_REGION=us-east-1")
+                sys.exit(1)
+        else:
+            # Anthropic Direct API
+            required_vars.append("ANTHROPIC_API_KEY")
 
     missing_vars = [var for var in required_vars if not os.getenv(var)]
 
@@ -183,11 +215,20 @@ if __name__ == "__main__":
         for var in missing_vars:
             print(f"  - {var}")
         if args.dry_run:
-            print("\nNote: In dry-run mode, only ANTHROPIC_API_KEY is required for Claude synthesis.")
+            if claude_backend == 'anthropic':
+                print("\nNote: In dry-run mode, only ANTHROPIC_API_KEY is required for Claude synthesis.")
+            print("Tip: You can also use AWS Bedrock by setting CLAUDE_BACKEND=bedrock")
         else:
             print("\nPlease set these in your environment or .env file.")
             print("Tip: Use --dry-run to test without Kafka infrastructure.")
         sys.exit(1)
+
+    # Print backend info
+    if claude_backend == 'bedrock':
+        region = os.getenv('AWS_REGION', 'us-east-1')
+        print(f"\n🔧 Using AWS Bedrock (region: {region}) for Claude API")
+    else:
+        print("\n🔧 Using Anthropic Direct API for Claude")
 
     # Run bootstrap
     result = asyncio.run(run_bootstrap(dry_run=args.dry_run))
