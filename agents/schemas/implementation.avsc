@@ -1,0 +1,350 @@
+{
+  "type": "record",
+  "name": "Implementation",
+  "namespace": "com.datamesh.agent.implementation",
+  "doc": "Generated implementation artifacts for approved solutions",
+  "fields": [
+    {
+      "name": "timestamp",
+      "type": "string",
+      "doc": "ISO 8601 timestamp of when this implementation was generated"
+    },
+    {
+      "name": "implementation_id",
+      "type": "string",
+      "doc": "Unique identifier for this implementation (UUID)"
+    },
+    {
+      "name": "solution_id",
+      "type": "string",
+      "doc": "Reference to the solution design"
+    },
+    {
+      "name": "idea_id",
+      "type": "string",
+      "doc": "Reference to the original idea"
+    },
+    {
+      "name": "idea_title",
+      "type": "string",
+      "doc": "Title of the data product (for readability)"
+    },
+    {
+      "name": "artifacts",
+      "type": {
+        "type": "array",
+        "items": {
+          "type": "record",
+          "name": "Artifact",
+          "fields": [
+            {
+              "name": "path",
+              "type": "string",
+              "doc": "File path for this artifact (e.g., 'terraform/data-products/gaming-analytics.tf')"
+            },
+            {
+              "name": "type",
+              "type": {
+                "type": "enum",
+                "name": "ArtifactType",
+                "symbols": ["TERRAFORM", "KSQLDB", "FLINK_SQL", "SCHEMA", "DOCUMENTATION", "CONFIG", "TEST"]
+              },
+              "doc": "Type of artifact"
+            },
+            {
+              "name": "content",
+              "type": "string",
+              "doc": "Full content of the generated file"
+            },
+            {
+              "name": "description",
+              "type": "string",
+              "doc": "Purpose of this artifact"
+            }
+          ]
+        }
+      },
+      "doc": "Generated code and configuration files"
+    },
+    {
+      "name": "terraform_resources",
+      "type": {
+        "type": "array",
+        "items": {
+          "type": "record",
+          "name": "TerraformResource",
+          "fields": [
+            {
+              "name": "resource_type",
+              "type": "string",
+              "doc": "Terraform resource type (e.g., 'confluent_kafka_topic')"
+            },
+            {
+              "name": "resource_name",
+              "type": "string",
+              "doc": "Resource identifier"
+            },
+            {
+              "name": "description",
+              "type": "string",
+              "doc": "What this resource does"
+            }
+          ]
+        }
+      },
+      "default": [],
+      "doc": "Summary of Terraform resources created"
+    },
+    {
+      "name": "pull_request",
+      "type": {
+        "type": "record",
+        "name": "PullRequest",
+        "fields": [
+          {
+            "name": "branch_name",
+            "type": "string",
+            "doc": "Git branch name for this PR"
+          },
+          {
+            "name": "title",
+            "type": "string",
+            "doc": "PR title"
+          },
+          {
+            "name": "description",
+            "type": "string",
+            "doc": "PR description with implementation details"
+          },
+          {
+            "name": "base_branch",
+            "type": "string",
+            "default": "main",
+            "doc": "Target branch for merge"
+          },
+          {
+            "name": "labels",
+            "type": {
+              "type": "array",
+              "items": "string"
+            },
+            "default": [],
+            "doc": "PR labels (e.g., 'agent-generated', 'data-product')"
+          },
+          {
+            "name": "url",
+            "type": ["null", "string"],
+            "default": null,
+            "doc": "GitHub PR URL (populated after creation)"
+          }
+        ]
+      },
+      "doc": "Pull request information"
+    },
+    {
+      "name": "deployment_plan",
+      "type": {
+        "type": "record",
+        "name": "DeploymentPlan",
+        "fields": [
+          {
+            "name": "steps",
+            "type": {
+              "type": "array",
+              "items": {
+                "type": "record",
+                "name": "DeploymentStep",
+                "fields": [
+                  {
+                    "name": "order",
+                    "type": "int",
+                    "doc": "Execution order"
+                  },
+                  {
+                    "name": "description",
+                    "type": "string",
+                    "doc": "What this step does"
+                  },
+                  {
+                    "name": "command",
+                    "type": "string",
+                    "doc": "Command to execute (e.g., 'terraform apply')"
+                  },
+                  {
+                    "name": "estimated_duration",
+                    "type": "string",
+                    "doc": "Estimated time to complete"
+                  }
+                ]
+              }
+            },
+            "doc": "Ordered deployment steps"
+          },
+          {
+            "name": "rollback_procedure",
+            "type": "string",
+            "doc": "How to rollback if deployment fails"
+          },
+          {
+            "name": "validation_steps",
+            "type": {
+              "type": "array",
+              "items": "string"
+            },
+            "default": [],
+            "doc": "How to verify successful deployment"
+          }
+        ]
+      },
+      "doc": "Deployment execution plan"
+    },
+    {
+      "name": "documentation",
+      "type": {
+        "type": "record",
+        "name": "Documentation",
+        "fields": [
+          {
+            "name": "readme_content",
+            "type": "string",
+            "doc": "Generated README.md content for the data product"
+          },
+          {
+            "name": "usage_examples",
+            "type": {
+              "type": "array",
+              "items": "string"
+            },
+            "default": [],
+            "doc": "Code examples showing how to use this data product"
+          },
+          {
+            "name": "api_documentation",
+            "type": "string",
+            "default": "",
+            "doc": "API documentation if applicable"
+          }
+        ]
+      },
+      "doc": "Generated documentation"
+    },
+    {
+      "name": "estimated_cost",
+      "type": {
+        "type": "record",
+        "name": "EstimatedCost",
+        "fields": [
+          {
+            "name": "monthly_usd",
+            "type": "float",
+            "doc": "Estimated monthly cost in USD"
+          },
+          {
+            "name": "breakdown",
+            "type": {
+              "type": "array",
+              "items": {
+                "type": "record",
+                "name": "CostItem",
+                "fields": [
+                  {
+                    "name": "component",
+                    "type": "string",
+                    "doc": "Cost component (e.g., 'Kafka topics', 'Flink CSUs')"
+                  },
+                  {
+                    "name": "monthly_usd",
+                    "type": "float",
+                    "doc": "Component cost in USD"
+                  }
+                ]
+              }
+            },
+            "doc": "Cost breakdown by component"
+          }
+        ]
+      },
+      "doc": "Cost estimation for this implementation"
+    },
+    {
+      "name": "test_plan",
+      "type": {
+        "type": "array",
+        "items": {
+          "type": "record",
+          "name": "TestCase",
+          "fields": [
+            {
+              "name": "name",
+              "type": "string",
+              "doc": "Test case name"
+            },
+            {
+              "name": "description",
+              "type": "string",
+              "doc": "What this test validates"
+            },
+            {
+              "name": "test_type",
+              "type": {
+                "type": "enum",
+                "name": "TestType",
+                "symbols": ["UNIT", "INTEGRATION", "E2E", "PERFORMANCE", "VALIDATION"]
+              },
+              "doc": "Type of test"
+            }
+          ]
+        }
+      },
+      "default": [],
+      "doc": "Test cases for validating the implementation"
+    },
+    {
+      "name": "metadata",
+      "type": {
+        "type": "record",
+        "name": "ImplementationMetadata",
+        "fields": [
+          {
+            "name": "agent_version",
+            "type": "string",
+            "default": "1.0.0",
+            "doc": "Version of the implementation agent"
+          },
+          {
+            "name": "generation_time_seconds",
+            "type": "float",
+            "doc": "Time taken to generate this implementation"
+          },
+          {
+            "name": "files_generated",
+            "type": "int",
+            "doc": "Number of files generated"
+          },
+          {
+            "name": "total_lines_of_code",
+            "type": "int",
+            "doc": "Total lines of code generated"
+          }
+        ]
+      },
+      "doc": "Metadata about the implementation generation process"
+    },
+    {
+      "name": "confidence_score",
+      "type": "float",
+      "default": 0.7,
+      "doc": "Agent's confidence in this implementation (0.0 to 1.0)"
+    },
+    {
+      "name": "status",
+      "type": {
+        "type": "enum",
+        "name": "ImplementationStatus",
+        "symbols": ["GENERATED", "PR_CREATED", "UNDER_REVIEW", "APPROVED", "DEPLOYED", "REJECTED", "FAILED"]
+      },
+      "default": "GENERATED",
+      "doc": "Current status of this implementation in the workflow"
+    }
+  ]
+}

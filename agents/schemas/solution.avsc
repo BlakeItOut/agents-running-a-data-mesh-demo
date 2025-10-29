@@ -1,0 +1,341 @@
+{
+  "type": "record",
+  "name": "Solution",
+  "namespace": "com.datamesh.agent.solution",
+  "doc": "Technical solution design for approved data product ideas",
+  "fields": [
+    {
+      "name": "timestamp",
+      "type": "string",
+      "doc": "ISO 8601 timestamp of when this solution was generated"
+    },
+    {
+      "name": "solution_id",
+      "type": "string",
+      "doc": "Unique identifier for this solution (UUID)"
+    },
+    {
+      "name": "idea_id",
+      "type": "string",
+      "doc": "Reference to the original idea"
+    },
+    {
+      "name": "idea_title",
+      "type": "string",
+      "doc": "Title of the data product (for readability)"
+    },
+    {
+      "name": "technical_approach",
+      "type": "string",
+      "doc": "High-level technical approach and architecture overview"
+    },
+    {
+      "name": "processing_engine",
+      "type": {
+        "type": "enum",
+        "name": "ProcessingEngine",
+        "symbols": ["KAFKA_STREAMS", "KSQLDB", "FLINK", "SPARK", "CONNECTOR_ONLY", "MIXED"]
+      },
+      "doc": "Primary data processing engine chosen for this solution"
+    },
+    {
+      "name": "processing_rationale",
+      "type": "string",
+      "doc": "Explanation of why this processing engine was chosen"
+    },
+    {
+      "name": "new_topics",
+      "type": {
+        "type": "array",
+        "items": {
+          "type": "record",
+          "name": "TopicSpec",
+          "fields": [
+            {
+              "name": "name",
+              "type": "string",
+              "doc": "Topic name following naming conventions"
+            },
+            {
+              "name": "partitions",
+              "type": "int",
+              "default": 6,
+              "doc": "Number of partitions"
+            },
+            {
+              "name": "retention_ms",
+              "type": "long",
+              "default": 604800000,
+              "doc": "Retention in milliseconds (default 7 days)"
+            },
+            {
+              "name": "description",
+              "type": "string",
+              "doc": "Purpose of this topic"
+            }
+          ]
+        }
+      },
+      "default": [],
+      "doc": "New Kafka topics to be created"
+    },
+    {
+      "name": "schemas",
+      "type": {
+        "type": "array",
+        "items": {
+          "type": "record",
+          "name": "SchemaSpec",
+          "fields": [
+            {
+              "name": "subject",
+              "type": "string",
+              "doc": "Schema Registry subject name"
+            },
+            {
+              "name": "schema_definition",
+              "type": "string",
+              "doc": "Avro schema definition (JSON string)"
+            },
+            {
+              "name": "description",
+              "type": "string",
+              "doc": "Purpose of this schema"
+            }
+          ]
+        }
+      },
+      "default": [],
+      "doc": "Avro schemas for new topics"
+    },
+    {
+      "name": "query_specifications",
+      "type": {
+        "type": "array",
+        "items": {
+          "type": "record",
+          "name": "QuerySpec",
+          "fields": [
+            {
+              "name": "name",
+              "type": "string",
+              "doc": "Name of the query/stream/table"
+            },
+            {
+              "name": "type",
+              "type": {
+                "type": "enum",
+                "name": "QueryType",
+                "symbols": ["STREAM", "TABLE", "MATERIALIZED_VIEW", "STREAMING_JOIN", "AGGREGATION"]
+              },
+              "doc": "Type of query construct"
+            },
+            {
+              "name": "sql_template",
+              "type": "string",
+              "doc": "SQL query template (ksqlDB or Flink SQL)"
+            },
+            {
+              "name": "description",
+              "type": "string",
+              "doc": "What this query accomplishes"
+            }
+          ]
+        }
+      },
+      "default": [],
+      "doc": "Stream processing queries and transformations"
+    },
+    {
+      "name": "infrastructure_requirements",
+      "type": {
+        "type": "record",
+        "name": "InfrastructureRequirements",
+        "fields": [
+          {
+            "name": "compute_pool_required",
+            "type": "boolean",
+            "default": false,
+            "doc": "Whether a Flink compute pool is needed"
+          },
+          {
+            "name": "ksqldb_cluster_required",
+            "type": "boolean",
+            "default": false,
+            "doc": "Whether a ksqlDB cluster is needed"
+          },
+          {
+            "name": "connectors_required",
+            "type": {
+              "type": "array",
+              "items": "string"
+            },
+            "default": [],
+            "doc": "List of connector types needed (e.g., 's3-sink', 'elasticsearch-sink')"
+          },
+          {
+            "name": "estimated_csu_hours",
+            "type": ["null", "float"],
+            "default": null,
+            "doc": "Estimated monthly CSU hours for compute pools"
+          },
+          {
+            "name": "additional_notes",
+            "type": "string",
+            "default": "",
+            "doc": "Additional infrastructure considerations"
+          }
+        ]
+      },
+      "doc": "Infrastructure resources required for this solution"
+    },
+    {
+      "name": "data_governance",
+      "type": {
+        "type": "record",
+        "name": "DataGovernance",
+        "fields": [
+          {
+            "name": "owner",
+            "type": "string",
+            "default": "data-mesh-team",
+            "doc": "Data product owner or team"
+          },
+          {
+            "name": "domain",
+            "type": "string",
+            "doc": "Business domain (e.g., 'gaming', 'fleet-management')"
+          },
+          {
+            "name": "classification",
+            "type": {
+              "type": "enum",
+              "name": "DataClassification",
+              "symbols": ["PUBLIC", "INTERNAL", "CONFIDENTIAL", "RESTRICTED"]
+            },
+            "default": "INTERNAL",
+            "doc": "Data classification level"
+          },
+          {
+            "name": "retention_policy",
+            "type": "string",
+            "default": "7 days",
+            "doc": "Data retention policy description"
+          },
+          {
+            "name": "tags",
+            "type": {
+              "type": "array",
+              "items": "string"
+            },
+            "default": [],
+            "doc": "Metadata tags for discovery and cataloging"
+          }
+        ]
+      },
+      "doc": "Data governance and metadata information"
+    },
+    {
+      "name": "api_specifications",
+      "type": {
+        "type": "array",
+        "items": {
+          "type": "record",
+          "name": "APISpec",
+          "fields": [
+            {
+              "name": "endpoint_pattern",
+              "type": "string",
+              "doc": "API endpoint pattern (e.g., '/api/v1/gaming-analytics')"
+            },
+            {
+              "name": "method",
+              "type": "string",
+              "doc": "HTTP method or access pattern"
+            },
+            {
+              "name": "description",
+              "type": "string",
+              "doc": "What this endpoint provides"
+            }
+          ]
+        }
+      },
+      "default": [],
+      "doc": "API specifications for accessing this data product"
+    },
+    {
+      "name": "testing_strategy",
+      "type": "string",
+      "doc": "Testing and validation approach for this solution"
+    },
+    {
+      "name": "deployment_considerations",
+      "type": "string",
+      "doc": "Deployment steps, dependencies, and rollback considerations"
+    },
+    {
+      "name": "estimated_effort_hours",
+      "type": "float",
+      "doc": "Estimated implementation effort in hours"
+    },
+    {
+      "name": "risks_and_mitigations",
+      "type": {
+        "type": "array",
+        "items": {
+          "type": "record",
+          "name": "RiskMitigation",
+          "fields": [
+            {
+              "name": "risk",
+              "type": "string",
+              "doc": "Description of the risk"
+            },
+            {
+              "name": "mitigation",
+              "type": "string",
+              "doc": "How to mitigate this risk"
+            },
+            {
+              "name": "severity",
+              "type": {
+                "type": "enum",
+                "name": "RiskSeverity",
+                "symbols": ["LOW", "MEDIUM", "HIGH", "CRITICAL"]
+              },
+              "doc": "Risk severity level"
+            }
+          ]
+        }
+      },
+      "default": [],
+      "doc": "Identified risks and mitigation strategies"
+    },
+    {
+      "name": "success_metrics",
+      "type": {
+        "type": "array",
+        "items": "string"
+      },
+      "default": [],
+      "doc": "How to measure success of this data product"
+    },
+    {
+      "name": "confidence_score",
+      "type": "float",
+      "default": 0.7,
+      "doc": "Agent's confidence in this solution design (0.0 to 1.0)"
+    },
+    {
+      "name": "status",
+      "type": {
+        "type": "enum",
+        "name": "SolutionStatus",
+        "symbols": ["PENDING_APPROVAL", "APPROVED", "REJECTED", "REVISION_REQUESTED"]
+      },
+      "default": "PENDING_APPROVAL",
+      "doc": "Current status of this solution in the workflow"
+    }
+  ]
+}

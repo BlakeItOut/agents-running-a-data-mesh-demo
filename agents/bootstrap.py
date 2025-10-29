@@ -40,9 +40,12 @@ from evaluation.time import run_time_agent
 from evaluation.cost import run_cost_agent
 from evaluation.decision import run_decision_agent
 from human_approval import run_human_approval
+from solution.solution import run_agent as run_solution_agent
+from implementation.implementation import run_agent as run_implementation_agent
+from human_solution_approval import run_approval_interface as run_solution_approval
 
 
-def print_header(dry_run=False, include_learning=False, include_evaluation=False):
+def print_header(dry_run=False, include_learning=False, include_evaluation=False, include_solution=False):
     """Print bootstrap header"""
     print("\n" + "=" * 70)
     mode = " (DRY RUN MODE)" if dry_run else ""
@@ -63,6 +66,9 @@ def print_header(dry_run=False, include_learning=False, include_evaluation=False
     if include_evaluation:
         print("  6. Run Evaluation Agents (Scope, Time, Cost)")
         print("  7. Run Decision Agent (synthesize evaluation)")
+    if include_solution:
+        print("  8. Run Solution Agent (design technical solutions)")
+        print("  9. Run Implementation Agent (generate code artifacts)")
     print("\n" + "=" * 70 + "\n")
 
 
@@ -82,9 +88,9 @@ def pause_for_user(step_name):
     input()
 
 
-async def run_bootstrap(dry_run=False, include_learning=False, include_evaluation=False, interactive=False, pause_between_steps=False):
+async def run_bootstrap(dry_run=False, include_learning=False, include_evaluation=False, include_solution=False, interactive=False, pause_between_steps=False):
     """Main bootstrap orchestration"""
-    print_header(dry_run=dry_run, include_learning=include_learning, include_evaluation=include_evaluation)
+    print_header(dry_run=dry_run, include_learning=include_learning, include_evaluation=include_evaluation, include_solution=include_solution)
 
     # Clean dry-run output directory for fresh demo runs
     if dry_run:
@@ -281,6 +287,58 @@ async def run_bootstrap(dry_run=False, include_learning=False, include_evaluatio
                 print("HUMAN APPROVAL COMPLETE")
                 print("=" * 70)
 
+        # Phase 4: Solution & Implementation Layer
+        solution_results = None
+        approval_done = False
+        if include_solution and (evaluation_results or not interactive):
+            time.sleep(0.5 if dry_run else 2)
+
+            # Step 10/11: Solution Agent
+            print_step(10, "Solution Agent (Technical Design)")
+            start_time = time.time()
+            solution_result = run_solution_agent(dry_run=dry_run, use_claude=True)
+            print(f"\n⏱️  Solution Agent completed in {time.time() - start_time:.2f}s")
+
+            if pause_between_steps:
+                pause_for_user("Solution Agent")
+
+            # Step 11/12 (Optional): Human Solution Approval
+            if interactive:
+                print("\n" + "=" * 70)
+                print("LAUNCHING SOLUTION APPROVAL INTERFACE")
+                print("=" * 70)
+                print("\nReview and approve/reject the solution designs...")
+                if not pause_between_steps:
+                    print("Press Enter to continue...")
+                    input()
+
+                run_solution_approval(dry_run=dry_run)
+                approval_done = True
+
+                print("\n" + "=" * 70)
+                print("SOLUTION APPROVAL COMPLETE")
+                print("=" * 70)
+
+                if pause_between_steps:
+                    pause_for_user("Solution Approval")
+
+            # Step 12/13: Implementation Agent
+            if approval_done or not interactive:
+                time.sleep(0.5 if dry_run else 2)
+
+                print_step(11 if not interactive else 12, "Implementation Agent (Code Generation)")
+                start_time = time.time()
+                implementation_result = run_implementation_agent(dry_run=dry_run, use_claude=True)
+                print(f"\n⏱️  Implementation Agent completed in {time.time() - start_time:.2f}s")
+
+                if pause_between_steps:
+                    pause_for_user("Implementation Agent")
+
+                solution_results = {
+                    "solutions": solution_result if solution_result else [],
+                    "implementations": implementation_result if implementation_result else []
+                }
+
         print("\n📍 Next Steps:")
         if not include_learning:
             print("  - Run with Learning Agent to generate ideas:")
@@ -293,9 +351,14 @@ async def run_bootstrap(dry_run=False, include_learning=False, include_evaluatio
         elif not include_evaluation and refinement_done:
             print("  - Run evaluation agents (Shark Tank challenge):")
             print("    python bootstrap.py --interactive --skip-learning" + (" --dry-run" if dry_run else ""))
-        elif evaluation_results:
-            print("  - Phase 3 complete! Decisions ready for solution design")
-            print(f"  - Generated {len(evaluation_results.get('decisions', []))} decisions")
+        elif not include_solution and evaluation_results:
+            print("  - Run solution and implementation agents (Phase 4):")
+            print("    python bootstrap.py --interactive --skip-learning --skip-evaluation" + (" --dry-run" if dry_run else ""))
+        elif solution_results:
+            print("  - Phase 4 complete! Implementation artifacts generated")
+            if solution_results.get('implementations'):
+                print(f"  - Generated {len(solution_results.get('implementations', []))} implementation(s)")
+                print("  - Review implementation files in dry-run-output/ directory" if dry_run else "  - Check agent-state-implementations topic")
         else:
             print("  - Continue through agent-flow.md architecture")
         print("\n" + "=" * 70 + "\n")
@@ -306,7 +369,8 @@ async def run_bootstrap(dry_run=False, include_learning=False, include_evaluatio
             "metrics": metrics_result,
             "current_state": current_state_result,
             "learning": learning_result,
-            "evaluation": evaluation_results
+            "evaluation": evaluation_results,
+            "solution": solution_results
         }
 
     except KeyboardInterrupt:
@@ -339,6 +403,11 @@ if __name__ == "__main__":
         "--skip-evaluation",
         action="store_true",
         help="Skip Evaluation Agents (stop after human refinement)"
+    )
+    parser.add_argument(
+        "--skip-solution",
+        action="store_true",
+        help="Skip Solution & Implementation Agents (stop after decision approval)"
     )
     parser.add_argument(
         "--interactive",
@@ -420,11 +489,12 @@ if __name__ == "__main__":
     else:
         print("\n🔧 Using Anthropic Direct API for Claude")
 
-    # Run bootstrap (include_learning and include_evaluation are True by default unless --skip flags are set)
+    # Run bootstrap (include_learning, include_evaluation, and include_solution are True by default unless --skip flags are set)
     result = asyncio.run(run_bootstrap(
         dry_run=args.dry_run,
         include_learning=not args.skip_learning,
         include_evaluation=not args.skip_evaluation,
+        include_solution=not args.skip_solution,
         interactive=args.interactive,
         pause_between_steps=args.pause
     ))
