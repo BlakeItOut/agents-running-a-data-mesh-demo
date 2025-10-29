@@ -456,13 +456,14 @@ def create_fallback_solution(idea, decision):
     }
 
 
-def run_agent(dry_run=False, use_claude=True):
+def run_agent(dry_run=False, use_claude=True, limit_one=False):
     """
     Main agent logic.
 
     Args:
         dry_run: If True, read from files and write to files instead of Kafka
         use_claude: If True, use Claude API; otherwise use fallback logic
+        limit_one: If True, only process one approved decision (for demo/interactive mode)
     """
     print("\n" + "="*80)
     print("SOLUTION AGENT - Phase 4")
@@ -483,6 +484,10 @@ def run_agent(dry_run=False, use_claude=True):
                 decision = json.load(f)
                 if decision.get("status") == "APPROVED":
                     approved_decisions.append(decision)
+
+        # Limit to one if requested
+        if limit_one and len(approved_decisions) > 1:
+            approved_decisions = [approved_decisions[0]]
 
         print(f"   Found {len(approved_decisions)} approved decision(s)")
 
@@ -510,6 +515,11 @@ def run_agent(dry_run=False, use_claude=True):
 
         # Load approved decisions from Kafka
         approved_decisions = load_approved_decisions_from_kafka()
+
+        # Limit to one if requested
+        if limit_one and len(approved_decisions) > 1:
+            approved_decisions = [approved_decisions[0]]
+
         print(f"   Found {len(approved_decisions)} approved decision(s)")
 
         if len(approved_decisions) == 0:

@@ -701,13 +701,14 @@ def create_pull_request(implementation):
         return None
 
 
-def run_agent(dry_run=False, use_claude=True):
+def run_agent(dry_run=False, use_claude=True, limit_one=False):
     """
     Main agent logic.
 
     Args:
         dry_run: If True, read from files and write to files instead of Kafka
         use_claude: If True, use Claude API; otherwise use fallback logic
+        limit_one: If True, only process one approved solution (for demo/interactive mode)
     """
     print("\n" + "="*80)
     print("IMPLEMENTATION AGENT - Phase 4")
@@ -728,6 +729,10 @@ def run_agent(dry_run=False, use_claude=True):
                 solution = json.load(f)
                 if solution.get("status") == "APPROVED":
                     approved_solutions.append(solution)
+
+        # Limit to one if requested
+        if limit_one and len(approved_solutions) > 1:
+            approved_solutions = [approved_solutions[0]]
 
         print(f"   Found {len(approved_solutions)} approved solution(s)")
 
@@ -750,6 +755,11 @@ def run_agent(dry_run=False, use_claude=True):
 
         # Load approved solutions from Kafka
         approved_solutions = load_approved_solutions_from_kafka()
+
+        # Limit to one if requested
+        if limit_one and len(approved_solutions) > 1:
+            approved_solutions = [approved_solutions[0]]
+
         print(f"   Found {len(approved_solutions)} approved solution(s)")
 
         if len(approved_solutions) == 0:
