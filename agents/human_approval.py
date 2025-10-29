@@ -237,8 +237,14 @@ def load_decisions_from_files():
     return decisions
 
 
-def approve_decisions(decisions, dry_run=False):
-    """Interactive loop for approving decisions."""
+def approve_decisions(decisions, dry_run=False, stop_after_first=False):
+    """Interactive loop for approving decisions.
+
+    Args:
+        decisions: List of decisions to review
+        dry_run: If True, write to files instead of Kafka
+        stop_after_first: If True, stop after first approval/rejection (for bootstrap integration)
+    """
     total = len(decisions)
 
     if total == 0:
@@ -263,18 +269,27 @@ def approve_decisions(decisions, dry_run=False):
                 break
             # else: action failed, ask again
 
+        # Stop after first approval/rejection when called from bootstrap
+        if stop_after_first and result:
+            break
+
     print("\n" + "=" * 80)
     print(" " * 25 + "APPROVAL COMPLETE!")
     print("=" * 80)
     print(f"\n✅ Reviewed {total} decisions\n")
 
 
-def run_human_approval(dry_run=False):
-    """Main entry point for human approval."""
+def run_human_approval(dry_run=False, stop_after_first=False):
+    """Main entry point for human approval.
+
+    Args:
+        dry_run: If True, read from/write to files instead of Kafka
+        stop_after_first: If True, stop after first approval/rejection (for bootstrap integration)
+    """
     print_header()
 
     decisions = load_decisions(dry_run=dry_run)
-    approve_decisions(decisions, dry_run=dry_run)
+    approve_decisions(decisions, dry_run=dry_run, stop_after_first=stop_after_first)
 
 
 if __name__ == "__main__":
