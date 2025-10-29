@@ -32,6 +32,7 @@ from common.kafka_utils import (
 )
 from common.schema_utils import get_schema_string
 from common.claude_utils import call_claude
+from common.json_repair import extract_and_repair_json
 
 
 def load_decision_from_file(idea_id):
@@ -338,37 +339,11 @@ Be thorough and specific. This will be used for implementation."""
     response = call_claude(system_prompt, prompt)
 
     try:
-        # Parse JSON from Claude's response
-        response_text = response.strip()
+        # Use JSON repair utility to extract and fix common errors
+        analysis = extract_and_repair_json(response)
 
-        # Try to extract JSON from markdown code blocks
-        if "```json" in response_text:
-            # Extract content between ```json and ```
-            json_start = response_text.find("```json") + 7
-            json_end = response_text.find("```", json_start)
-            if json_end != -1:
-                response_text = response_text[json_start:json_end].strip()
-        elif "```" in response_text:
-            # Extract content between ``` markers
-            json_start = response_text.find("```") + 3
-            json_end = response_text.find("```", json_start)
-            if json_end != -1:
-                response_text = response_text[json_start:json_end].strip()
-
-        # If response starts with markdown headers, find the JSON object
-        if not response_text.startswith("{"):
-            # Find the first { which should be the JSON start
-            json_start_idx = response_text.find("{")
-            if json_start_idx != -1:
-                response_text = response_text[json_start_idx:]
-
-        # Find the last } to handle any trailing content
-        if not response_text.endswith("}"):
-            json_end_idx = response_text.rfind("}")
-            if json_end_idx != -1:
-                response_text = response_text[:json_end_idx + 1]
-
-        analysis = json.loads(response_text)
+        if analysis is None:
+            raise json.JSONDecodeError("JSON repair failed", response, 0)
 
         # Build solution message
         solution = {
