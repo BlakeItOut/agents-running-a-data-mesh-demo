@@ -281,7 +281,7 @@ async def run_bootstrap(dry_run=False, include_learning=False, include_evaluatio
                     print("Press Enter to continue...")
                     input()
 
-                run_human_approval(dry_run=dry_run)
+                run_human_approval(dry_run=dry_run, stop_after_first=True)
 
                 print("\n" + "=" * 70)
                 print("HUMAN APPROVAL COMPLETE")
