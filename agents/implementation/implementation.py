@@ -904,11 +904,16 @@ def main():
         action="store_true",
         help="Use fallback logic instead of Claude API"
     )
+    parser.add_argument(
+        "--limit-one",
+        action="store_true",
+        help="Process only one approved solution (useful for testing)"
+    )
 
     args = parser.parse_args()
 
     try:
-        run_agent(dry_run=args.dry_run, use_claude=not args.no_claude)
+        run_agent(dry_run=args.dry_run, use_claude=not args.no_claude, limit_one=args.limit_one)
     except KeyboardInterrupt:
         print("\n\n⚠️  Agent interrupted by user")
         sys.exit(1)
