@@ -46,8 +46,12 @@ def load_solution_from_file(solution_id=None):
     return None
 
 
-def load_approved_solutions_from_kafka():
-    """Load all approved solutions from Kafka."""
+def load_approved_solutions_from_kafka(consume_one_only=False):
+    """Load approved solutions from Kafka.
+
+    Args:
+        consume_one_only: If True, only consume one message (for demos)
+    """
     print("   Loading approved solutions from Kafka...")
 
     approved_solutions = []
@@ -71,6 +75,8 @@ def load_approved_solutions_from_kafka():
             value = deserializer(msg.value(), None)
             if value and value.get("status") == "APPROVED":
                 approved_solutions.append(value)
+                if consume_one_only:
+                    break
     finally:
         consumer.close()
 
@@ -729,11 +735,7 @@ def run_agent(dry_run=False, use_claude=True, limit_one=False):
         print("☁️  KAFKA MODE: Reading from and writing to Kafka topics\n")
 
         # Load approved solutions from Kafka
-        approved_solutions = load_approved_solutions_from_kafka()
-
-        # Limit to one if requested
-        if limit_one and len(approved_solutions) > 1:
-            approved_solutions = [approved_solutions[0]]
+        approved_solutions = load_approved_solutions_from_kafka(consume_one_only=limit_one)
 
         print(f"   Found {len(approved_solutions)} approved solution(s)")
 

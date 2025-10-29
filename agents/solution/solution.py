@@ -61,8 +61,12 @@ def load_idea_from_file(idea_id):
     return None
 
 
-def load_approved_decisions_from_kafka():
-    """Load all approved decisions from Kafka."""
+def load_approved_decisions_from_kafka(consume_one_only=False):
+    """Load approved decisions from Kafka.
+
+    Args:
+        consume_one_only: If True, only consume one message (for demos)
+    """
     print("   Loading approved decisions from Kafka...")
 
     approved_decisions = []
@@ -86,6 +90,8 @@ def load_approved_decisions_from_kafka():
             value = deserializer(msg.value(), None)
             if value and value.get("status") == "APPROVED":
                 approved_decisions.append(value)
+                if consume_one_only:
+                    break
     finally:
         consumer.close()
 
@@ -489,11 +495,7 @@ def run_agent(dry_run=False, use_claude=True, limit_one=False):
         print("☁️  KAFKA MODE: Reading from and writing to Kafka topics\n")
 
         # Load approved decisions from Kafka
-        approved_decisions = load_approved_decisions_from_kafka()
-
-        # Limit to one if requested
-        if limit_one and len(approved_decisions) > 1:
-            approved_decisions = [approved_decisions[0]]
+        approved_decisions = load_approved_decisions_from_kafka(consume_one_only=limit_one)
 
         print(f"   Found {len(approved_decisions)} approved decision(s)")
 
