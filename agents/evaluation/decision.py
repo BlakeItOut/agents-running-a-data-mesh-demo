@@ -63,8 +63,12 @@ def load_challenges_from_files(idea_id):
     return challenges
 
 
-def load_challenges_from_kafka():
-    """Load all challenges from Kafka topics and group by idea_id."""
+def load_challenges_from_kafka(consume_one_only=False):
+    """Load challenges from Kafka topics and group by idea_id.
+
+    Args:
+        consume_one_only: If True, only consume one message per topic (for demos)
+    """
     print("   Loading challenges from Kafka...")
 
     challenges_by_idea = {}
@@ -93,6 +97,8 @@ def load_challenges_from_kafka():
                 if idea_id not in challenges_by_idea:
                     challenges_by_idea[idea_id] = {}
                 challenges_by_idea[idea_id]["scope"] = value
+                if consume_one_only:
+                    break
     finally:
         consumer.close()
 
@@ -120,6 +126,8 @@ def load_challenges_from_kafka():
                 if idea_id not in challenges_by_idea:
                     challenges_by_idea[idea_id] = {}
                 challenges_by_idea[idea_id]["time"] = value
+                if consume_one_only:
+                    break
     finally:
         consumer.close()
 
@@ -147,6 +155,8 @@ def load_challenges_from_kafka():
                 if idea_id not in challenges_by_idea:
                     challenges_by_idea[idea_id] = {}
                 challenges_by_idea[idea_id]["cost"] = value
+                if consume_one_only:
+                    break
     finally:
         consumer.close()
 
@@ -436,17 +446,13 @@ def run_decision_agent(dry_run=False, limit_one=False):
     else:
         # Production: Load from Kafka
         print("\n1. Loading challenges from Kafka...")
-        challenges_by_idea = load_challenges_from_kafka()
+        challenges_by_idea = load_challenges_from_kafka(consume_one_only=limit_one)
 
         if not challenges_by_idea:
             print("\n⚠️  No challenges found to synthesize")
             return []
 
-        # Limit to one if requested
-        if limit_one and len(challenges_by_idea) > 1:
-            # Take only the first idea
-            first_idea_id = list(challenges_by_idea.keys())[0]
-            challenges_by_idea = {first_idea_id: challenges_by_idea[first_idea_id]}
+        if limit_one:
             print(f"\n2. Synthesizing decision for 1 idea (limit_one=True)...")
         else:
             print(f"\n2. Synthesizing decisions for {len(challenges_by_idea)} ideas...")
