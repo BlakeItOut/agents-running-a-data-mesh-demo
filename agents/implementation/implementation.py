@@ -197,7 +197,7 @@ Generate complete implementation artifacts:
    - PR title
    - PR description with context
 
-Respond in JSON format:
+IMPORTANT: You must respond with ONLY a valid JSON object. Do not include markdown headers, explanations, or code fences. Start your response with {{ and end with }}. Output only the JSON structure below:
 {{
   "artifacts": [
     {{
@@ -328,13 +328,33 @@ Generate realistic, production-ready code. Use actual Terraform syntax and valid
     try:
         # Parse JSON from Claude's response
         response_text = response.strip()
-        if response_text.startswith("```json"):
-            response_text = response_text[7:]
-        if response_text.startswith("```"):
-            response_text = response_text[3:]
-        if response_text.endswith("```"):
-            response_text = response_text[:-3]
-        response_text = response_text.strip()
+
+        # Try to extract JSON from markdown code blocks
+        if "```json" in response_text:
+            # Extract content between ```json and ```
+            json_start = response_text.find("```json") + 7
+            json_end = response_text.find("```", json_start)
+            if json_end != -1:
+                response_text = response_text[json_start:json_end].strip()
+        elif "```" in response_text:
+            # Extract content between ``` markers
+            json_start = response_text.find("```") + 3
+            json_end = response_text.find("```", json_start)
+            if json_end != -1:
+                response_text = response_text[json_start:json_end].strip()
+
+        # If response starts with markdown headers, find the JSON object
+        if not response_text.startswith("{"):
+            # Find the first { which should be the JSON start
+            json_start_idx = response_text.find("{")
+            if json_start_idx != -1:
+                response_text = response_text[json_start_idx:]
+
+        # Find the last } to handle any trailing content
+        if not response_text.endswith("}"):
+            json_end_idx = response_text.rfind("}")
+            if json_end_idx != -1:
+                response_text = response_text[:json_end_idx + 1]
 
         analysis = json.loads(response_text)
 
