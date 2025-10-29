@@ -95,7 +95,7 @@ def get_bedrock_client():
 def call_claude(
     prompt: str,
     system_prompt: Optional[str] = None,
-    model: str = "claude-3-5-sonnet-20241022",
+    model: str = "claude-sonnet-4-5-20250929",
     max_tokens: int = 4096,
     temperature: float = 1.0
 ) -> str:

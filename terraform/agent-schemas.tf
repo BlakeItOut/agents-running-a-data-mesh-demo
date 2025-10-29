@@ -165,6 +165,44 @@ resource "confluent_schema" "decision" {
   }
 }
 
+# Solution & Implementation Layer Schemas (Phase 4)
+
+# Solution Schema
+resource "confluent_schema" "solution" {
+  schema_registry_cluster {
+    id = data.confluent_schema_registry_cluster.schema_registry.id
+  }
+
+  rest_endpoint = data.confluent_schema_registry_cluster.schema_registry.rest_endpoint
+
+  subject_name = "${confluent_kafka_topic.agent_state_solutions.topic_name}-value"
+  format       = "AVRO"
+  schema       = file("${path.module}/../agents/schemas/solution.avsc")
+
+  credentials {
+    key    = confluent_api_key.schema_registry_api_key.id
+    secret = confluent_api_key.schema_registry_api_key.secret
+  }
+}
+
+# Implementation Schema
+resource "confluent_schema" "implementation" {
+  schema_registry_cluster {
+    id = data.confluent_schema_registry_cluster.schema_registry.id
+  }
+
+  rest_endpoint = data.confluent_schema_registry_cluster.schema_registry.rest_endpoint
+
+  subject_name = "${confluent_kafka_topic.agent_state_implementations.topic_name}-value"
+  format       = "AVRO"
+  schema       = file("${path.module}/../agents/schemas/implementation.avsc")
+
+  credentials {
+    key    = confluent_api_key.schema_registry_api_key.id
+    secret = confluent_api_key.schema_registry_api_key.secret
+  }
+}
+
 # Outputs
 
 output "agent_schema_ids" {
@@ -179,5 +217,7 @@ output "agent_schema_ids" {
     time_challenge   = confluent_schema.time_challenge.schema_identifier
     cost_challenge   = confluent_schema.cost_challenge.schema_identifier
     decision         = confluent_schema.decision.schema_identifier
+    solution         = confluent_schema.solution.schema_identifier
+    implementation   = confluent_schema.implementation.schema_identifier
   }
 }
