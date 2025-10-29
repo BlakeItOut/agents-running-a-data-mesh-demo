@@ -381,8 +381,13 @@ def publish_decision(decision, dry_run=False):
     return success
 
 
-def run_decision_agent(dry_run=False):
-    """Main decision agent execution."""
+def run_decision_agent(dry_run=False, limit_one=False):
+    """Main decision agent execution.
+
+    Args:
+        dry_run: If True, read from/write to files instead of Kafka
+        limit_one: If True, only process one idea (for demo/interactive mode)
+    """
     print("\n" + "=" * 60)
     print("DECISION AGENT - Shark Tank Panel Decision")
     print("=" * 60)
@@ -395,7 +400,12 @@ def run_decision_agent(dry_run=False):
             print("\n⚠️  No challenges found to synthesize")
             return []
 
-        print(f"\n1. Synthesizing decisions for {len(idea_ids)} ideas...")
+        # Limit to one if requested
+        if limit_one and len(idea_ids) > 1:
+            idea_ids = [idea_ids[0]]
+            print(f"\n1. Synthesizing decision for 1 idea (limit_one=True)...")
+        else:
+            print(f"\n1. Synthesizing decisions for {len(idea_ids)} ideas...")
 
         decisions = []
         for i, idea_id in enumerate(idea_ids, 1):
@@ -432,7 +442,14 @@ def run_decision_agent(dry_run=False):
             print("\n⚠️  No challenges found to synthesize")
             return []
 
-        print(f"\n2. Synthesizing decisions for {len(challenges_by_idea)} ideas...")
+        # Limit to one if requested
+        if limit_one and len(challenges_by_idea) > 1:
+            # Take only the first idea
+            first_idea_id = list(challenges_by_idea.keys())[0]
+            challenges_by_idea = {first_idea_id: challenges_by_idea[first_idea_id]}
+            print(f"\n2. Synthesizing decision for 1 idea (limit_one=True)...")
+        else:
+            print(f"\n2. Synthesizing decisions for {len(challenges_by_idea)} ideas...")
 
         decisions = []
         for i, (idea_id, challenges) in enumerate(challenges_by_idea.items(), 1):

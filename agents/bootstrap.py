@@ -258,7 +258,7 @@ async def run_bootstrap(dry_run=False, include_learning=False, include_evaluatio
             # Step 9/10: Decision Agent
             print_step(9, "Decision Agent (Shark Tank Panel)")
             start_time = time.time()
-            decision_result = run_decision_agent(dry_run=dry_run)
+            decision_result = run_decision_agent(dry_run=dry_run, limit_one=interactive)
             print(f"\n⏱️  Decision Agent completed in {time.time() - start_time:.2f}s")
 
             if pause_between_steps:
@@ -296,7 +296,7 @@ async def run_bootstrap(dry_run=False, include_learning=False, include_evaluatio
             # Step 10/11: Solution Agent
             print_step(10, "Solution Agent (Technical Design)")
             start_time = time.time()
-            solution_result = run_solution_agent(dry_run=dry_run, use_claude=True)
+            solution_result = run_solution_agent(dry_run=dry_run, use_claude=True, limit_one=interactive)
             print(f"\n⏱️  Solution Agent completed in {time.time() - start_time:.2f}s")
 
             if pause_between_steps:
@@ -328,7 +328,7 @@ async def run_bootstrap(dry_run=False, include_learning=False, include_evaluatio
 
                 print_step(11 if not interactive else 12, "Implementation Agent (Code Generation)")
                 start_time = time.time()
-                implementation_result = run_implementation_agent(dry_run=dry_run, use_claude=True)
+                implementation_result = run_implementation_agent(dry_run=dry_run, use_claude=True, limit_one=interactive)
                 print(f"\n⏱️  Implementation Agent completed in {time.time() - start_time:.2f}s")
 
                 if pause_between_steps:
