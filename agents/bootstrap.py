@@ -312,7 +312,7 @@ async def run_bootstrap(dry_run=False, include_learning=False, include_evaluatio
                     print("Press Enter to continue...")
                     input()
 
-                run_solution_approval(dry_run=dry_run)
+                run_solution_approval(dry_run=dry_run, stop_after_first=True)
                 approval_done = True
 
                 print("\n" + "=" * 70)

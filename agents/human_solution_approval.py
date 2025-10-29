@@ -273,8 +273,13 @@ def load_solutions_from_kafka():
     return solutions
 
 
-def run_approval_interface(dry_run=False):
-    """Run the interactive approval interface."""
+def run_approval_interface(dry_run=False, stop_after_first=False):
+    """Run the interactive approval interface.
+
+    Args:
+        dry_run: If True, read from/write to files instead of Kafka
+        stop_after_first: If True, stop after first approval/rejection (for bootstrap integration)
+    """
     print_header()
 
     if dry_run:
@@ -317,6 +322,10 @@ def run_approval_interface(dry_run=False):
             # If result is False, ask again
 
         if action == 'q':
+            break
+
+        # Stop after first approval/rejection/revision when called from bootstrap
+        if stop_after_first and result:
             break
 
     # Print summary
